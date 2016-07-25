@@ -7,5 +7,69 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="aws\lib" level="project" />
+    <orderEntry type="library" name="aws\third-party\lib" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/common" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/common/jdiff" />
+        </SOURCES>
+        <jarDirectory url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/common" recursive="false" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/hdfs" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/hdfs/jdiff" />
+        </SOURCES>
+        <jarDirectory url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/hdfs" recursive="false" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/httpfs" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/kms" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/mapreduce" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/mapreduce" recursive="false" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/yarn" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/../hadoop-2.7.2/share/hadoop/yarn" recursive="false" />
+      </library>
+    </orderEntry>
   </component>
 </module>
