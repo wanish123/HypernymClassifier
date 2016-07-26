@@ -1,57 +1,50 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * Created by talwanich on 25/07/2016.
  */
 public class LocalMain {
-    public static void main(String[] args) {
 
-        BufferedReader br = null;
-        List<NounPair> nounPairList = new LinkedList<NounPair>();
-        int sum = 0;
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+        AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 
-        try {
+        //final String ass3PathName = "s3://gw-storage-30293052/HypernymClassifier";
+       // final String corpusFileName = "corpus_debug.txt";
+        final String outputFileName = "Output/";
 
-            String sCurrentLine;
+        final Path CORPUS = new Path("input/corpus_debug.txt");
+        final Path OUTPUT_FEATURES = new Path(outputFileName);
 
-            br = new BufferedReader(new FileReader("annotated_set.txt"));
+        /* STEP 1 */
+        Configuration conf1 = new Configuration();
+        Job job1 = Job.getInstance(conf1, "MapReduce1");
+        job1.setJarByClass(MapReduce1.class);
+        job1.setMapperClass(MapReduce1.DPMapper.class);
+        job1.setReducerClass(MapReduce1.FeaturesReducer.class);
+        job1.setOutputKeyClass(LongWritable.class);
+        job1.setOutputValueClass(Text.class);
+        job1.setInputFormatClass(TextInputFormat.class);
+        job1.setOutputFormatClass(TextOutputFormat.class);
+        FileInputFormat.addInputPath(job1, CORPUS);
+        FileOutputFormat.setOutputPath(job1, OUTPUT_FEATURES);
+        job1.waitForCompletion(true);
+        /* END - STEP 1*/
 
-
-            while ((sCurrentLine = br.readLine()) != null) {
-                String[] parts = sCurrentLine.split("\\t");
-                if(parts[2].equals("True")) {
-                    sum += 1;
-                    NounPair nounPair = new NounPair(parts[0], parts[1]);
-                    nounPairList.add(nounPair);
-                }
-            }
-
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (br != null)br.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-
-
-//        for(NounPair pair : nounPairList){
-//            System.out.print(pair + " ,");
-//        }
-
-
-        System.out.println("Sum: " + sum);
-
+        System.exit(0);
 
     }
 }

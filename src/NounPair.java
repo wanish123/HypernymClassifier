@@ -29,6 +29,10 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
         this.second.set(second);
     }
 
+    public void setTag(String tag){
+        this.tag.set(tag);
+    }
+
     @Override
     public int compareTo(NounPair o) {
         return 0;

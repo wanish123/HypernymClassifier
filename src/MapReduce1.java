@@ -1,6 +1,8 @@
 import java.io.*;
 import java.util.*;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -18,19 +20,17 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 public class MapReduce1 {
 
 
-
-
     public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair>{
 
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private static final String s3BucketName = "gw-storage-30293052";
-        private static final String annotatedSetFileName = "annotated_set.txt";
+        private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
 
         @Override
         public void setup(Context context){
-
-            AmazonS3 s3 = new AmazonS3Client();
+            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+            AmazonS3 s3 = new AmazonS3Client(credentials);
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 
@@ -61,29 +61,66 @@ public class MapReduce1 {
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
-            value = stem(value);
-            List<NounPair> nounPairList = extractNounPairs(value);
-            for(NounPair pair : nounPairList){
-                    if(hypernymNounPairs.contains(pair)){
-                        DependencyPath dp = getDependencyPath(pair, value);
-                        context.write(dp, pair);
-                    }
+            System.out.println("IM HERE");
+            String sentence = value.toString().split("\\t")[1];
+            sentence = stem(sentence);
+            List<Subsentence> subsentences = extractSubsentences(sentence);
+            NounPair pair;
+            DependencyPath dp;
+
+            for(Subsentence subsentence: subsentences) {
+                pair = subsentence.getNounPair();
+                if (hypernymNounPairs.contains(pair)) {
+                    dp = subsentence.getDependencyPath();
+                    context.write(dp, pair);
+                }
             }
 
         }
-        //TODO
-        private DependencyPath getDependencyPath(NounPair pair, Text value) {
-            return  null;
+
+
+        private String stem(String sentence) {
+            StringBuilder sb = new StringBuilder();
+            String[] parts = sentence.split(" ");
+            for(String part: parts){
+                Stemmer stemmer = new Stemmer();
+                String[] wordInfo = part.split("/");
+                String word = wordInfo[0];
+                stemmer.add(word.toCharArray(), word.length());
+                stemmer.stem();
+                word = String.valueOf(stemmer.getResultBuffer());
+                sb.append(word + "/");
+                sb.append(wordInfo[1] + "/");
+                sb.append(wordInfo[3] + " ");
+
+            }
+            return  sb.toString();
         }
 
         //TODO
-        private Text stem(Text value) {
-            return  null;
+        private List<Subsentence> extractSubsentences(String sentence) {
+            ParseTree parseTree = new ParseTree(sentence);
+            List<Subsentence> subsentences = new LinkedList<Subsentence>();
+            extractSubsentences(parseTree.getRoot(),"",subsentences);
+            return subsentences;
         }
 
-        //TODO
-        private List<NounPair> extractNounPairs(Text value) {
-            return null;
+        private void extractSubsentences(ParseNode node, String path, List<Subsentence> subsentences) {
+
+            if(node != null)
+                for(ParseNode child: node.getChildren())
+                    extractSubsentences(child, path, subsentences);
+
+            path += (node.getPath() + " ");
+            if(node.isNoun()){
+                if(!path.equals("")){
+                    Subsentence sentence = new Subsentence(path);
+                    subsentences.add(sentence);
+                    return;
+                }
+            }
+
+
         }
 
 
@@ -124,8 +161,8 @@ public class MapReduce1 {
      */
     public static void main(String[] args) throws Exception{
 
-        if(args.length != 2)
-            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , pmiCounters>");
+//        if(args.length != 2)
+//            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , pmiCounters>");
 
         //Should be in S3
         final Path CORPUS = new Path(args[0]);
