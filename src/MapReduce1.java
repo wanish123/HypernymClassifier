@@ -1,12 +1,9 @@
 import java.io.*;
 import java.util.*;
 
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -23,7 +20,7 @@ public class MapReduce1 {
 
 
 
-    public static class DPMapper extends Mapper<Object, Text, Text,  NounPair>{
+    public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair>{
 
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
@@ -64,8 +61,27 @@ public class MapReduce1 {
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
+            value = stem(value);
+            List<NounPair> nounPairList = extractNounPairs(value);
+            for(NounPair pair : nounPairList){
+                    if(hypernymNounPairs.contains(pair)){
+                        DependencyPath dp = getDependencyPath(pair, value);
+                        context.write(dp, pair);
+                    }
+            }
+
+        }
+        //TODO
+        private DependencyPath getDependencyPath(NounPair pair, Text value) {
+            return  null;
         }
 
+        //TODO
+        private Text stem(Text value) {
+            return  null;
+        }
+
+        //TODO
         private List<NounPair> extractNounPairs(Text value) {
             return null;
         }
@@ -73,10 +89,29 @@ public class MapReduce1 {
 
     }
 
-    public static class FeaturesReducer extends Reducer<Text, NounPair,LongWritable, Text> {
+    public static class FeaturesReducer extends Reducer<DependencyPath, NounPair,DependencyPath, DependencyPath> {
 
-        public void reduce(Text key, Iterable<LongWritable> values, Context context)
+        private long DPMIN;
+        private String DPMIN_VAR = "DPMIN";
+        private HashSet<NounPair> uniqueNPs;
+
+        @Override
+        public void setup(Context context){
+            DPMIN = context.getConfiguration().getLong(DPMIN_VAR, 5);
+            uniqueNPs = new HashSet<NounPair>();
+
+        }
+        public void reduce(DependencyPath dp, Iterable<NounPair> values, Context context)
                 throws IOException, InterruptedException {
+
+                Iterator<NounPair> iter = values.iterator();
+                while(iter.hasNext() && uniqueNPs.size() < DPMIN)
+                    uniqueNPs.add(iter.next());
+
+            if(uniqueNPs.size() == DPMIN)
+                context.write(dp, dp);
+
+            uniqueNPs.clear();
 
         }
     }
@@ -92,6 +127,7 @@ public class MapReduce1 {
         if(args.length != 2)
             throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , pmiCounters>");
 
+        //Should be in S3
         final Path CORPUS = new Path(args[0]);
         final Path OUTPUT_FEATURES = new Path(args[1]);
 

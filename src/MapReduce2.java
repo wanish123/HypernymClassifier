@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by talwanich and gilshelef on 08/06/2016.
@@ -25,14 +27,24 @@ public class MapReduce2 {
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
+        private static List<DependencyPath> features = new LinkedList<DependencyPath>();
 
         private static final String s3BucketName = "gw-storage-30293052";
         private static final String annotatedSetFileName = "annotated_set.txt";
-
+        private static AmazonS3 s3;
         @Override
         public void setup(Context context){
 
-            AmazonS3 s3 = new AmazonS3Client();
+            s3 = new AmazonS3Client();
+            initializeHyperSets();
+            initializeFeaturesList();
+
+        }
+        //TODO
+        private void initializeFeaturesList() {
+        }
+
+        private void initializeHyperSets() {
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 
@@ -62,7 +74,46 @@ public class MapReduce2 {
             }
         }
 
-        public void map(Object key, Text value, Context context) throws IOException, InterruptedException{}
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
+
+            int index;
+            NPFeatureIndex npAndIndex;
+            int occurrences = getOccurrences(value);
+
+            value = stem(value);
+
+            List<NounPair> nounPairList = extractNounPairs(value);
+            for(NounPair pair : nounPairList) {
+                DependencyPath dp = getDependencyPath(pair, value);
+                if ((index = features.indexOf(dp)) != -1) {
+                    npAndIndex = new NPFeatureIndex(pair, index);
+                    context.write(npAndIndex, new LongWritable(occurrences));
+                }
+            }
+
+        }
+
+        private int getOccurrences(Text value) {
+            return 0;
+        }
+
+
+        //TOCOPY
+        private DependencyPath getDependencyPath(NounPair pair, Text value) {
+            return  null;
+        }
+
+        //TOCOPY
+        private Text stem(Text value) {
+            return  null;
+        }
+
+        //TOCOPY
+        //Don't forget to find the pair tag
+        private List<NounPair> extractNounPairs(Text value) {
+            return null;
+        }
+
 
     }
 
@@ -74,6 +125,12 @@ public class MapReduce2 {
         public void reduce(NPFeatureIndex key, Iterable<LongWritable> values, Context context)
                 throws IOException, InterruptedException {
 
+            Iterator<LongWritable> iter = values.iterator();
+            long sum = 0;
+            while(iter.hasNext())
+                sum += iter.next().get();
+
+            context.write(key, new LongWritable(sum));
 
         }
 

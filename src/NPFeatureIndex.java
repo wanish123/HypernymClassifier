@@ -9,6 +9,10 @@ import java.io.IOException;
  * Created by talwanich on 25/07/2016.
  */
 public class NPFeatureIndex implements Writable, WritableComparable<NPFeatureIndex> {
+    public NPFeatureIndex(NounPair pair, int index) {
+
+    }
+
     @Override
     public int compareTo(NPFeatureIndex o) {
         return 0;

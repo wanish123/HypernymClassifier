@@ -13,13 +13,20 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
 
     private Text first = new Text();
     private Text second = new Text();
+    private Text tag = new Text();
 
     public NounPair(){}
+
+    public NounPair(String first, String second, String tag) {
+        this.first.set(first);
+        this.second.set(second);
+        this.tag.set(tag);
+
+    }
 
     public NounPair(String first, String second) {
         this.first.set(first);
         this.second.set(second);
-
     }
 
     @Override
