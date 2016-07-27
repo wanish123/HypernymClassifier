@@ -28,8 +28,8 @@ public class ParseTree {
             String wordInfo = parts[i];
             String[] wordInfoParts = wordInfo.split("/");
             int index = Integer.parseInt(wordInfoParts[2]);
-            ParseNode node = new ParseNode(wordInfoParts[0], wordInfoParts[1],i);
-            if(!nodes.contains(index))
+            ParseNode node = new ParseNode(wordInfoParts[0], wordInfoParts[1],i + 1);
+            if(!nodes.containsKey(index))
                 nodes.put(index, new LinkedList<ParseNode>());
             nodes.get(index).add(node);
 

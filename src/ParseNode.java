@@ -12,6 +12,10 @@ public class ParseNode {
 
     private List<ParseNode> children = new LinkedList<ParseNode>();
 
+    public boolean isLeaf() {
+        return children.isEmpty();
+    }
+
     private enum Nouns {NN, NNS, NNP, NNPS}
 
     public ParseNode(String word, String tag, int sentencePos) {
@@ -25,7 +29,7 @@ public class ParseNode {
     }
 
     public String getPath() {
-        return word;
+        return word + "/" + tag;
     }
 
 
@@ -33,7 +37,7 @@ public class ParseNode {
     public void addChildren(Hashtable<Integer, LinkedList<ParseNode>> nodes) {
 
         LinkedList<ParseNode> children = nodes.get(this.sentencePos);
-        if(!children.isEmpty()) {
+        if(children != null && !children.isEmpty()) {
             this.addChildren(children);
             for (ParseNode child : children)
                 child.addChildren(nodes);
@@ -47,9 +51,9 @@ public class ParseNode {
 
 
     public boolean isNoun() {
-        return tag.equals(Nouns.NN) ||
-                tag.equals(Nouns.NNS) ||
-                tag.equals(Nouns.NNP)||
-                tag.equals(Nouns.NNPS);
+        return tag.equals(Nouns.NN.toString()) ||
+                tag.equals(Nouns.NNS.toString()) ||
+                tag.equals(Nouns.NNP.toString())||
+                tag.equals(Nouns.NNPS.toString());
     }
 }

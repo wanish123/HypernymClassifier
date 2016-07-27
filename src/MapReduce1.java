@@ -61,7 +61,6 @@ public class MapReduce1 {
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
-            System.out.println("IM HERE");
             String sentence = value.toString().split("\\t")[1];
             sentence = stem(sentence);
             List<Subsentence> subsentences = extractSubsentences(sentence);
@@ -88,7 +87,7 @@ public class MapReduce1 {
                 String word = wordInfo[0];
                 stemmer.add(word.toCharArray(), word.length());
                 stemmer.stem();
-                word = String.valueOf(stemmer.getResultBuffer());
+                word = stemmer.toString();
                 sb.append(word + "/");
                 sb.append(wordInfo[1] + "/");
                 sb.append(wordInfo[3] + " ");
@@ -97,28 +96,49 @@ public class MapReduce1 {
             return  sb.toString();
         }
 
-        //TODO
         private List<Subsentence> extractSubsentences(String sentence) {
             ParseTree parseTree = new ParseTree(sentence);
             List<Subsentence> subsentences = new LinkedList<Subsentence>();
-            extractSubsentences(parseTree.getRoot(),"",subsentences);
+            extractSubsentences(parseTree.getRoot(),subsentences);
             return subsentences;
         }
 
-        private void extractSubsentences(ParseNode node, String path, List<Subsentence> subsentences) {
+            private String extractSubsentences(ParseNode node, List<Subsentence> subsentences) {
 
-            if(node != null)
-                for(ParseNode child: node.getChildren())
-                    extractSubsentences(child, path, subsentences);
+            String path = "";
+            if(node != null) {
 
-            path += (node.getPath() + " ");
-            if(node.isNoun()){
-                if(!path.equals("")){
-                    Subsentence sentence = new Subsentence(path);
-                    subsentences.add(sentence);
-                    return;
+                if(node.isLeaf() && node.isNoun())
+                    path = (node.getPath() + " " + path);
+
+                for (ParseNode child : node.getChildren()) { // not a leaf
+                    path = extractSubsentences(child, subsentences);
+                    if(node.isNoun()){
+                        path = (node.getPath() + " " + path);
+                        if(isSubsentence(path)){
+                            Subsentence sentence = new Subsentence(path);
+                            subsentences.add(sentence);
+                        }
+                    }
+                    else if(path.length() > 0) {
+                        path = (node.getPath() + " " + path);
+                    }
                 }
             }
+
+
+
+            return path;
+
+        }
+
+        private boolean isSubsentence(String path) {
+            boolean gil;
+            String[] parts = path.split(" ");
+            gil = parts.length > 1;
+            parts = parts[0].split("/");
+            ParseNode tmp = new ParseNode(parts[0], parts[1], 1);
+            return tmp.isNoun() && gil;
 
 
         }

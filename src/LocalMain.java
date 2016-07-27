@@ -20,7 +20,7 @@ import java.io.IOException;
 public class LocalMain {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+        //AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 
         //final String ass3PathName = "s3://gw-storage-30293052/HypernymClassifier";
        // final String corpusFileName = "corpus_debug.txt";

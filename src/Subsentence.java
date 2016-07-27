@@ -10,8 +10,8 @@ public class Subsentence {
         String[] parts = path.split(" ");
         StringBuilder sb = new StringBuilder();
         this.nounPair = new NounPair(parts[0], parts[parts.length-1]);
-        for(String p: parts)
-            sb.append(p + " ");
+        for(int i = 1; i < parts.length -1; i++)
+            sb.append(parts[i] + " ");
         this.dp = new DependencyPath(sb.toString());
 
     }
