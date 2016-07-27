@@ -33,9 +33,11 @@ public class LocalMain {
         Job job1 = Job.getInstance(conf1, "MapReduce1");
         job1.setJarByClass(MapReduce1.class);
         job1.setMapperClass(MapReduce1.DPMapper.class);
+        job1.setMapOutputKeyClass(DependencyPath.class);
+        job1.setMapOutputValueClass(NounPair.class);
         job1.setReducerClass(MapReduce1.FeaturesReducer.class);
         job1.setOutputKeyClass(DependencyPath.class);
-        job1.setOutputValueClass(NounPair.class);
+        job1.setOutputValueClass(DependencyPath.class);
         job1.setInputFormatClass(TextInputFormat.class);
         job1.setOutputFormatClass(TextOutputFormat.class);
         FileInputFormat.addInputPath(job1, CORPUS);
@@ -67,7 +69,7 @@ public class LocalMain {
         job2.setNumReduceTasks(NUM_OF_REDUCERS);
         job2.setPartitionerClass(NounPairPartitioner.class);
 
-        FileInputFormat.addInputPath(job2, OUTPUT_FEATURES);
+        FileInputFormat.addInputPath(job2, CORPUS);
         FileOutputFormat.setOutputPath(job2, FeaturesVector_Output);
         job2.waitForCompletion(true);
         /* END - STEP 2*/

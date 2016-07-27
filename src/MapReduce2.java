@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import org.apache.commons.math3.exception.NotANumberException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
@@ -29,15 +30,17 @@ public class MapReduce2 {
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
-        private static List<DependencyPath> features = new LinkedList<DependencyPath>();
+        private List<DependencyPath> features = new LinkedList<DependencyPath>();
 
 
         private static final String s3BucketName = "gw-storage-30293052";
-        private static final String annotatedSetFileName = "annotated_set.txt";
-        private final String outputFileNameStep1 = "OutputStep1/";
-
+        private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
+        private final String outputFileNameStep1 = "OutputStep1/part-r-00000";
+        private AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+        private AmazonS3 s3;
         @Override
         public void setup(Context context){
+            s3 = new AmazonS3Client(credentials);
 
             initializeHyperSets();
             initializeFeaturesList();
@@ -53,11 +56,11 @@ public class MapReduce2 {
                 e.printStackTrace();
             }
             String line;
-            DependencyPath dp;
+            DependencyPath feature;
             try {
                 while ((line = br.readLine()) != null) {
-                    dp = parseDependencyPath(line);
-                    features.add(dp);
+                    feature = parseDependencyPath(line);
+                    features.add(feature);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -66,14 +69,12 @@ public class MapReduce2 {
 
 
         private DependencyPath parseDependencyPath(String line) {
-            System.out.println(line);
-            return null;
+            String[] parts = line.split("\t");
+            return new DependencyPath(parts[0]);
         }
 
 
         private void initializeHyperSets() {
-            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-            AmazonS3 s3 = new AmazonS3Client(credentials);
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 
@@ -85,11 +86,17 @@ public class MapReduce2 {
 
                 while ((sCurrentLine = br.readLine()) != null) {
                     String[] parts = sCurrentLine.split("\\t");
-                    NounPair nounPair = new NounPair(parts[0], parts[1]);
-                    if(parts[2].equals("True"))
+                    String first = stemIt(parts[0]);
+                    String second = stemIt(parts[1]);
+                    NounPair nounPair = new NounPair(first, second);
+                    if(parts[2].equals("True")) {
+                        nounPair.setType(Type.True);
                         hypernymNounPairs.add(nounPair);
-                    else
+                    }
+                    else {
+                        nounPair.setType(Type.False);
                         nonHypernymNounPairs.add(nounPair);
+                    }
                 }
 
             } catch (IOException e) {
@@ -104,9 +111,32 @@ public class MapReduce2 {
 
             //DEBUG
             NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
+            customPair1.setType(MapReduce2.Type.True);
             NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
+            customPair2.setType(MapReduce2.Type.True);
+
+            NounPair customPair3 = new NounPair("custodi/NN", "authors/NN");
+            customPair3.setType(MapReduce2.Type.True);
+
+            NounPair customPair4 = new NounPair("custodi/NN", "wanish/NN");
+            customPair3.setType(MapReduce2.Type.True);
+
+            NounPair customPair5 = new NounPair("authors/NN", "wanish/NN");
+            customPair5.setType(MapReduce2.Type.True);
+
             hypernymNounPairs.add(customPair1);
             hypernymNounPairs.add(customPair2);
+            hypernymNounPairs.add(customPair3);
+            hypernymNounPairs.add(customPair4);
+            hypernymNounPairs.add(customPair5);
+
+        }
+
+        private String stemIt(String word) {
+            Stemmer stemmer = new Stemmer();
+            stemmer.add(word.toCharArray(), word.length());
+            stemmer.stem();
+            return stemmer.toString();
 
         }
 
@@ -126,6 +156,7 @@ public class MapReduce2 {
             for(Subsentence subsentence: subsentences) {
                 pair = subsentence.getNounPair();
                 dp = subsentence.getDependencyPath();
+
                 if ((index = features.indexOf(dp)) != -1) {
                     pair.setType(findType(pair));
                     npAndIndex = new NPFeatureCoordinate(pair, index);
@@ -133,9 +164,6 @@ public class MapReduce2 {
                 }
 
             }
-
-
-
         }
 
         private Type findType(NounPair pair) {
@@ -146,9 +174,15 @@ public class MapReduce2 {
             return Type.Unknown;
         }
 
-        //TODO
         private int getOccurrences(Text value) {
-            return 1;
+            String[] parts = value.toString().split("\t");
+            int res = 0;
+            try{
+                res = Integer.parseInt(parts[2]);
+            }catch (NotANumberException e){
+                e.printStackTrace();
+            }
+            return res;
         }
 
 
@@ -157,12 +191,11 @@ public class MapReduce2 {
             StringBuilder sb = new StringBuilder();
             String[] parts = sentence.split(" ");
             for(String part: parts){
-                Stemmer stemmer = new Stemmer();
                 String[] wordInfo = part.split("/");
                 String word = wordInfo[0];
-                stemmer.add(word.toCharArray(), word.length());
-                stemmer.stem();
-                word = stemmer.toString();
+
+                word = stemIt(word);
+
                 sb.append(word + "/");
                 sb.append(wordInfo[1] + "/");
                 sb.append(wordInfo[3] + " ");
@@ -224,9 +257,6 @@ public class MapReduce2 {
 
     public static class FeaturesVectorBuilderReducer extends Reducer<NPFeatureCoordinate,LongWritable, NPFeatureCoordinate, LongWritable> {
 
-        @Override
-        public void setup(Context context){
-        }
         public void reduce(NPFeatureCoordinate key, Iterable<LongWritable> values, Context context)
                 throws IOException, InterruptedException {
 

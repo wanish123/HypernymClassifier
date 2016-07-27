@@ -11,7 +11,7 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
 
     private Text first = new Text();
     private Text second = new Text();
-    private MapReduce2.Type type;
+    private Text type = new Text();
 
 
     public NounPair(){}
@@ -23,7 +23,7 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
     }
 
     public void setType(MapReduce2.Type type){
-        this.type = type;
+        this.type.set(type.toString());
     }
 
     @Override
@@ -49,16 +49,14 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
     public void write(DataOutput dataOutput) throws IOException {
         this.first.write(dataOutput);
         this.second.write(dataOutput);
-        Text type = new Text(this.type.toString());
-        type.write(dataOutput);
+        this.type.write(dataOutput);
     }
 
     @Override
     public void readFields(DataInput dataInput) throws IOException {
         this.first.readFields(dataInput);
         this.second.readFields(dataInput);
-        Text type = new Text(this.type.toString());
-        type.readFields(dataInput);
+        this.type.readFields(dataInput);
 
     }
 
@@ -75,6 +73,7 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
             return false;
 
         final NounPair other = (NounPair) obj;
+
         if(!(this.first.equals(other.first) && (this.second.equals(other.second))))
             return false;
 
@@ -88,5 +87,11 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
         hash += this.second.hashCode();
         return hash;
 
+    }
+
+    public void set(NounPair pair) {
+        this.first.set(pair.first.toString());
+        this.second.set(pair.second.toString());
+        this.type = pair.type;
     }
 }

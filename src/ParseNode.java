@@ -16,6 +16,11 @@ public class ParseNode {
         return children.isEmpty();
     }
 
+    public void trim() {
+        children.clear();
+
+    }
+
     private enum Nouns {NN, NNS, NNP, NNPS}
 
     public ParseNode(String word, String tag, int sentencePos) {

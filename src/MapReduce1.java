@@ -40,12 +40,12 @@ public class MapReduce1 {
 
                 String sCurrentLine;
 
-                //TODO
-                //Should me stemmed our hypernym?
                 while ((sCurrentLine = br.readLine()) != null) {
                     String[] parts = sCurrentLine.split("\\t");
                     if(parts[2].equals("True")) {
-                        NounPair nounPair = new NounPair(parts[0], parts[1]);
+                        String first = stemIt(parts[0]);
+                        String second = stemIt(parts[1]);
+                        NounPair nounPair = new NounPair(first,second);
                         hypernymNounPairs.add(nounPair);
                     }
                 }
@@ -62,9 +62,26 @@ public class MapReduce1 {
 
             //DEBUG
             NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
+            customPair1.setType(MapReduce2.Type.True);
+
             NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
+            customPair2.setType(MapReduce2.Type.True);
+
+            NounPair customPair3 = new NounPair("custodi/NN", "author/NN");
+            customPair3.setType(MapReduce2.Type.True);
+
+            NounPair customPair4 = new NounPair("custodi/NN", "wanish/NN");
+            customPair3.setType(MapReduce2.Type.True);
+
+            NounPair customPair5 = new NounPair("author/NN", "wanish/NN");
+            customPair5.setType(MapReduce2.Type.True);
+
             hypernymNounPairs.add(customPair1);
             hypernymNounPairs.add(customPair2);
+            hypernymNounPairs.add(customPair3);
+            hypernymNounPairs.add(customPair4);
+            hypernymNounPairs.add(customPair5);
+
         }
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -92,18 +109,25 @@ public class MapReduce1 {
             StringBuilder sb = new StringBuilder();
             String[] parts = sentence.split(" ");
             for(String part: parts){
-                Stemmer stemmer = new Stemmer();
                 String[] wordInfo = part.split("/");
                 String word = wordInfo[0];
-                stemmer.add(word.toCharArray(), word.length());
-                stemmer.stem();
-                word = stemmer.toString();
+
+                word = stemIt(word);
+
                 sb.append(word + "/");
                 sb.append(wordInfo[1] + "/");
                 sb.append(wordInfo[3] + " ");
 
             }
             return  sb.toString();
+        }
+
+        private String stemIt(String word) {
+            Stemmer stemmer = new Stemmer();
+            stemmer.add(word.toCharArray(), word.length());
+            stemmer.stem();
+            return stemmer.toString();
+
         }
 
         private List<Subsentence> extractSubsentences(String sentence) {
@@ -113,9 +137,10 @@ public class MapReduce1 {
             return subsentences;
         }
 
-            private String extractSubsentences(ParseNode node, List<Subsentence> subsentences) {
+        private String extractSubsentences(ParseNode node, List<Subsentence> subsentences) {
 
             String path = "";
+            String trimmedPath = "";
             if(node != null) {
 
                 if(node.isLeaf() && node.isNoun())
@@ -123,20 +148,22 @@ public class MapReduce1 {
 
                 for (ParseNode child : node.getChildren()) { // not a leaf
                     path = extractSubsentences(child, subsentences);
+                    
                     if(node.isNoun()){
                         path = (node.getPath() + " " + path);
                         if(isSubsentence(path)){
                             Subsentence sentence = new Subsentence(path);
                             subsentences.add(sentence);
                         }
+
                     }
+
+
                     else if(path.length() > 0) {
                         path = (node.getPath() + " " + path);
                     }
                 }
             }
-
-
 
             return path;
 

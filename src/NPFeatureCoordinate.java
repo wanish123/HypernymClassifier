@@ -11,15 +11,15 @@ import java.io.IOException;
  */
 public class NPFeatureCoordinate implements Writable, WritableComparable<NPFeatureCoordinate> {
 
-    private NounPair pair;
-    private int coordinate;
+    private NounPair pair = new NounPair();
+    private LongWritable coordinate = new LongWritable();
 
 
     public NPFeatureCoordinate(){}
 
     public NPFeatureCoordinate(NounPair pair, int coordinate) {
-        this.pair = pair;
-        this.coordinate = coordinate;
+        this.pair.set(pair);
+        this.coordinate.set(coordinate);
     }
 
    @Override
@@ -27,14 +27,13 @@ public class NPFeatureCoordinate implements Writable, WritableComparable<NPFeatu
         if(!pair.equals(o.pair))
             return pair.compareTo(o.pair);
         else
-            return coordinate - o.coordinate;
+            return coordinate.compareTo(o.coordinate);
 
     }
 
     @Override
     public void write(DataOutput dataOutput) throws IOException {
         pair.write(dataOutput);
-        LongWritable coordinate = new LongWritable(this.coordinate);
         coordinate.write(dataOutput);
 
 
@@ -43,7 +42,6 @@ public class NPFeatureCoordinate implements Writable, WritableComparable<NPFeatu
     @Override
     public void readFields(DataInput dataInput) throws IOException {
         pair.readFields(dataInput);
-        LongWritable coordinate = new LongWritable(this.coordinate);
         coordinate.readFields(dataInput);
 
     }
