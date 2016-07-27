@@ -8,4 +8,8 @@ public class DependencyPath {
     public DependencyPath(String path){
         this.path = path;
     }
+
+    public boolean isEmpty() {
+        return path.isEmpty();
+    }
 }

@@ -1,3 +1,5 @@
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -10,9 +12,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -23,28 +23,57 @@ import java.util.List;
  */
 public class MapReduce2 {
 
-    public static class FeatureBuilderMapper extends Mapper<Object, Text, NPFeatureIndex, LongWritable> {
+    public enum Type{True, False, Unknown}
+
+    public static class FeatureBuilderMapper extends Mapper<Object, Text, NPFeatureCoordinate, LongWritable> {
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
         private static List<DependencyPath> features = new LinkedList<DependencyPath>();
 
+
         private static final String s3BucketName = "gw-storage-30293052";
         private static final String annotatedSetFileName = "annotated_set.txt";
-        private static AmazonS3 s3;
+        private final String outputFileNameStep1 = "OutputStep1/";
+
         @Override
         public void setup(Context context){
 
-            s3 = new AmazonS3Client();
             initializeHyperSets();
             initializeFeaturesList();
 
         }
-        //TODO
+
         private void initializeFeaturesList() {
+
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new FileReader(outputFileNameStep1));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            String line;
+            DependencyPath dp;
+            try {
+                while ((line = br.readLine()) != null) {
+                    dp = parseDependencyPath(line);
+                    features.add(dp);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
+
+        private DependencyPath parseDependencyPath(String line) {
+            System.out.println(line);
+            return null;
+        }
+
+
         private void initializeHyperSets() {
+            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+            AmazonS3 s3 = new AmazonS3Client(credentials);
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 
@@ -72,58 +101,133 @@ public class MapReduce2 {
                     ex.printStackTrace();
                 }
             }
+
+            //DEBUG
+            NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
+            NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
+            hypernymNounPairs.add(customPair1);
+            hypernymNounPairs.add(customPair2);
+
         }
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
 
+            NounPair pair;
+            DependencyPath dp;
             int index;
-            NPFeatureIndex npAndIndex;
+            NPFeatureCoordinate npAndIndex;
+
             int occurrences = getOccurrences(value);
+            String sentence = value.toString().split("\\t")[1];
+            sentence = stem(sentence);
+            List<Subsentence> subsentences = extractSubsentences(sentence);
 
-            value = stem(value);
 
-            List<NounPair> nounPairList = extractNounPairs(value);
-            for(NounPair pair : nounPairList) {
-                DependencyPath dp = getDependencyPath(pair, value);
+            for(Subsentence subsentence: subsentences) {
+                pair = subsentence.getNounPair();
+                dp = subsentence.getDependencyPath();
                 if ((index = features.indexOf(dp)) != -1) {
-                    npAndIndex = new NPFeatureIndex(pair, index);
+                    pair.setType(findType(pair));
+                    npAndIndex = new NPFeatureCoordinate(pair, index);
                     context.write(npAndIndex, new LongWritable(occurrences));
                 }
+
             }
 
+
+
+        }
+
+        private Type findType(NounPair pair) {
+            if(hypernymNounPairs.contains(pair))
+                return Type.True;
+            if(nonHypernymNounPairs.contains(pair))
+                return  Type.False;
+            return Type.Unknown;
         }
 
         //TODO
         private int getOccurrences(Text value) {
-            return 0;
+            return 1;
         }
 
 
-        //TOCOPY
-        private DependencyPath getDependencyPath(NounPair pair, Text value) {
-            return  null;
+
+        private String stem(String sentence) {
+            StringBuilder sb = new StringBuilder();
+            String[] parts = sentence.split(" ");
+            for(String part: parts){
+                Stemmer stemmer = new Stemmer();
+                String[] wordInfo = part.split("/");
+                String word = wordInfo[0];
+                stemmer.add(word.toCharArray(), word.length());
+                stemmer.stem();
+                word = stemmer.toString();
+                sb.append(word + "/");
+                sb.append(wordInfo[1] + "/");
+                sb.append(wordInfo[3] + " ");
+
+            }
+            return  sb.toString();
         }
 
-        //TOCOPY
-        private Text stem(Text value) {
-            return  null;
+        private List<Subsentence> extractSubsentences(String sentence) {
+            ParseTree parseTree = new ParseTree(sentence);
+            List<Subsentence> subsentences = new LinkedList<Subsentence>();
+            extractSubsentences(parseTree.getRoot(),subsentences);
+            return subsentences;
         }
 
-        //TOCOPY
-        //Don't forget to find the pair tag
-        private List<NounPair> extractNounPairs(Text value) {
-            return null;
+        private String extractSubsentences(ParseNode node, List<Subsentence> subsentences) {
+
+            String path = "";
+            if(node != null) {
+
+                if(node.isLeaf() && node.isNoun())
+                    path = (node.getPath() + " " + path);
+
+                for (ParseNode child : node.getChildren()) { // not a leaf
+                    path = extractSubsentences(child, subsentences);
+                    if(node.isNoun()){
+                        path = (node.getPath() + " " + path);
+                        if(isSubsentence(path)){
+                            Subsentence sentence = new Subsentence(path);
+                            subsentences.add(sentence);
+                        }
+                    }
+                    else if(path.length() > 0) {
+                        path = (node.getPath() + " " + path);
+                    }
+                }
+            }
+
+
+
+            return path;
+
         }
+
+        private boolean isSubsentence(String path) {
+            boolean gil;
+            String[] parts = path.split(" ");
+            gil = parts.length > 1;
+            parts = parts[0].split("/");
+            ParseNode tmp = new ParseNode(parts[0], parts[1], 1);
+            return tmp.isNoun() && gil;
+
+
+        }
+
 
 
     }
 
-    public static class FeaturesVectorBuilderReducer extends Reducer<NPFeatureIndex ,LongWritable, NPFeatureIndex, LongWritable> {
+    public static class FeaturesVectorBuilderReducer extends Reducer<NPFeatureCoordinate,LongWritable, NPFeatureCoordinate, LongWritable> {
 
         @Override
         public void setup(Context context){
         }
-        public void reduce(NPFeatureIndex key, Iterable<LongWritable> values, Context context)
+        public void reduce(NPFeatureCoordinate key, Iterable<LongWritable> values, Context context)
                 throws IOException, InterruptedException {
 
             Iterator<LongWritable> iter = values.iterator();
@@ -154,11 +258,11 @@ public class MapReduce2 {
         Job job2 = Job.getInstance(conf2, "MapReduce2");
         job2.setJarByClass(MapReduce2.class);
         job2.setMapperClass(FeatureBuilderMapper.class);
-        job2.setMapOutputKeyClass(NPFeatureIndex.class);
+        job2.setMapOutputKeyClass(NPFeatureCoordinate.class);
         job2.setMapOutputValueClass(LongWritable.class);
         job2.setReducerClass(FeaturesVectorBuilderReducer.class);
         job2.setCombinerClass(FeaturesVectorBuilderReducer.class);
-        job2.setOutputKeyClass(NPFeatureIndex.class);
+        job2.setOutputKeyClass(NPFeatureCoordinate.class);
         job2.setOutputValueClass(LongWritable.class);
         job2.setInputFormatClass(TextInputFormat.class);
         job2.setNumReduceTasks(NUM_OF_REDUCERS);

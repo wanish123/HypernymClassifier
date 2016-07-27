@@ -40,6 +40,8 @@ public class MapReduce1 {
 
                 String sCurrentLine;
 
+                //TODO
+                //Should me stemmed our hypernym?
                 while ((sCurrentLine = br.readLine()) != null) {
                     String[] parts = sCurrentLine.split("\\t");
                     if(parts[2].equals("True")) {
@@ -57,6 +59,12 @@ public class MapReduce1 {
                     ex.printStackTrace();
                 }
             }
+
+            //DEBUG
+            NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
+            NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
+            hypernymNounPairs.add(customPair1);
+            hypernymNounPairs.add(customPair2);
         }
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -71,7 +79,9 @@ public class MapReduce1 {
                 pair = subsentence.getNounPair();
                 if (hypernymNounPairs.contains(pair)) {
                     dp = subsentence.getDependencyPath();
-                    context.write(dp, pair);
+                    //TODO Ask many adler
+                    if(!dp.isEmpty())
+                        context.write(dp, pair);
                 }
             }
 
