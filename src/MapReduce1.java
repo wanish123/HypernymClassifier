@@ -96,9 +96,7 @@ public class MapReduce1 {
                 pair = subsentence.getNounPair();
                 if (hypernymNounPairs.contains(pair)) {
                     dp = subsentence.getDependencyPath();
-                    //TODO Ask many adler
-                    if(!dp.isEmpty())
-                        context.write(dp, pair);
+                    context.write(dp, pair);
                 }
             }
 
@@ -132,40 +130,35 @@ public class MapReduce1 {
 
         private List<Subsentence> extractSubsentences(String sentence) {
             ParseTree parseTree = new ParseTree(sentence);
-            List<Subsentence> subsentences = new LinkedList<Subsentence>();
-            extractSubsentences(parseTree.getRoot(),subsentences);
+            List<Subsentence> subsentences = extractSubsentences(parseTree.getRoot(),"");
             return subsentences;
         }
 
-        private String extractSubsentences(ParseNode node, List<Subsentence> subsentences) {
 
-            String path = "";
-            String trimmedPath = "";
-            if(node != null) {
+        private List<Subsentence> extractSubsentences(ParseNode node, String path) {
 
-                if(node.isLeaf() && node.isNoun())
-                    path = (node.getPath() + " " + path);
+            List<Subsentence> result = new LinkedList<Subsentence>();
+            List<Subsentence> childResult;
+            List<Subsentence> self;
 
-                for (ParseNode child : node.getChildren()) { // not a leaf
-                    path = extractSubsentences(child, subsentences);
-                    
-                    if(node.isNoun()){
-                        path = (node.getPath() + " " + path);
-                        if(isSubsentence(path)){
-                            Subsentence sentence = new Subsentence(path);
-                            subsentences.add(sentence);
-                        }
+            if(path.isEmpty())
+                path = node.getPath();
+            else
+                path = (path + " " + node.getPath());
 
-                    }
-
-
-                    else if(path.length() > 0) {
-                        path = (node.getPath() + " " + path);
-                    }
-                }
+            if(node.isNoun() && isSubsentence(path)){
+                Subsentence sentence = new Subsentence(path);
+                result.add(sentence);
+                self = extractSubsentences(node, "");
+                result.addAll(self);
             }
 
-            return path;
+            for (ParseNode child : node.getChildren()) { // not a leaf
+                childResult = extractSubsentences(child, path);
+                result.addAll(childResult);
+            }
+
+            return result;
 
         }
 
