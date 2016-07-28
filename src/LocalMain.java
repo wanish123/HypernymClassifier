@@ -20,10 +20,12 @@ public class LocalMain {
     // final String corpusFileName = "corpus_debug.txt";
     final static  String outputFileNameStep1 = "OutputStep1/";
     final static String outputFileNameStep2 = "OutputStep2/";
-    final static    int DPMIN = 5;
+    final static    int DPMIN = 1;
 
     final static Path CORPUS_DEBUG = new Path("input/corpus_debug.txt");
-    final static Path CORPUS = new Path("input/biarcs.big.txt");
+    final static Path CORPUS_BIG = new Path("input/biarcs.big.txt");
+    final static Path CORPUS_SMALL = new Path("input/biarcs.small.txt");
+    final static Path CORPUS = CORPUS_SMALL;
 
     final static Path OUTPUT_FEATURES = new Path(outputFileNameStep1);
 
@@ -52,7 +54,7 @@ public class LocalMain {
         job1.waitForCompletion(true);
         /* END - STEP 1*/
 
-        final int NUM_OF_REDUCERS = 10;
+        final int NUM_OF_REDUCERS = 3;
         final Path FeaturesVector_Output = new Path(outputFileNameStep2);
 
 

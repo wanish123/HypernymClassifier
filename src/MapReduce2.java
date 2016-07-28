@@ -25,17 +25,18 @@ import java.util.List;
 public class MapReduce2 {
 
     public enum Type{True, False, Unknown}
+    private static List<DependencyPath> features = new LinkedList<DependencyPath>();
+
 
     public static class FeatureBuilderMapper extends Mapper<Object, Text, NPFeatureCoordinate, LongWritable> {
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
-        private List<DependencyPath> features = new LinkedList<DependencyPath>();
 
 
         private static final String s3BucketName = "gw-storage-30293052";
         private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
-        private final String outputFileNameStep1 = "OutputStep1/part-r-00000";
+        private static String outputFileNameStep1 = "OutputStep1/part-r-00000";
         private AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
         private AmazonS3 s3;
         @Override
@@ -130,24 +131,24 @@ public class MapReduce2 {
                     ex.printStackTrace();
                 }
             }
-//
-//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
-//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
-//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
-//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
-//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
-//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
-//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
-//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
-//
-//            hypernymNounPairs.add(np1);
-//            hypernymNounPairs.add(np2);
-//            hypernymNounPairs.add(np3);
-//            hypernymNounPairs.add(np4);
-//            hypernymNounPairs.add(np5);
-//            hypernymNounPairs.add(np6);
-//            hypernymNounPairs.add(np7);
-//            hypernymNounPairs.add(np8);
+
+            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
+            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
+            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
+            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
+            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
+            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
+            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
+            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
+
+            hypernymNounPairs.add(np1);
+            hypernymNounPairs.add(np2);
+            hypernymNounPairs.add(np3);
+            hypernymNounPairs.add(np4);
+            hypernymNounPairs.add(np5);
+            hypernymNounPairs.add(np6);
+            hypernymNounPairs.add(np7);
+            hypernymNounPairs.add(np8);
 
         }
 
@@ -285,6 +286,13 @@ public class MapReduce2 {
     }
 
     public static class FeaturesVectorBuilderReducer extends Reducer<NPFeatureCoordinate,LongWritable, NPFeatureCoordinate, LongWritable> {
+
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            NounPair pair = new NounPair("Features", "Size");
+            context.write(new NPFeatureCoordinate(pair, 0), new LongWritable(features.size()));
+        }
 
         public void reduce(NPFeatureCoordinate key, Iterable<LongWritable> values, Context context)
                 throws IOException, InterruptedException {
