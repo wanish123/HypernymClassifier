@@ -9,18 +9,28 @@ import java.io.IOException;
 
 public class NounPair implements Writable, WritableComparable<NounPair> {
 
-    private Text first = new Text();
-    private Text second = new Text();
-    private Text type = new Text();
-
-
+    private Word first = new Word();
+    private Word second = new Word();
+    private Text type = new Text(MapReduce2.Type.Unknown.toString());
 
     public NounPair(){}
 
+    public NounPair(String first, String POS1, String second, String POS2){
+        this.first.set(first, POS1);
+        this.second.set(second, POS2);
+    }
 
     public NounPair(String first, String second) {
         this.first.set(first);
         this.second.set(second);
+
+    }
+
+    public NounPair(String first, String second, MapReduce2.Type type) {
+        this.first.set(first);
+        this.second.set(second);
+        this.type.set(type.toString());
+
     }
 
     public void setType(MapReduce2.Type type){
@@ -29,20 +39,19 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
 
     @Override
     public int compareTo(NounPair o) {
-       if(type.equals(MapReduce2.Type.True))
-           return 1;
-        if(o.type.equals(MapReduce2.Type.True))
-            return -1;
-        if(type.equals(MapReduce2.Type.False))
-            return 1;
-        if(o.type.equals(MapReduce2.Type.False))
-            return -1;
 
-        int res;
-        if((res = first.compareTo(o.first)) != 0)
-            return res;
+        if(type.toString().equals(o.type.toString())){
 
-        else return second.compareTo(o.second);
+            if(!first.equals(o.first))
+                return first.compareTo(o.first);
+
+            return second.compareTo(o.second);
+
+        }
+
+        return type.toString().compareTo(o.type.toString());
+
+
 
     }
 
@@ -91,8 +100,8 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
     }
 
     public void set(NounPair pair) {
-        this.first.set(pair.first.toString());
-        this.second.set(pair.second.toString());
-        this.type = pair.type;
+        this.first.set(pair.first.getWord(), pair.first.getPartOfSpeech());
+        this.second.set(pair.second.getWord(), pair.second.getPartOfSpeech());
+        this.type.set(pair.type.toString());
     }
 }

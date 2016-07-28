@@ -6,26 +6,15 @@ import java.util.List;
  * Created by talwanich on 26/07/2016.
  */
 public class ParseNode {
-    private String word;
-    private String tag;
-    private int sentencePos;
+
+    private Word word = new Word();
     private List<ParseNode> children = new LinkedList<ParseNode>();
 
-    public boolean isLeaf() {
-        return children.isEmpty();
-    }
 
-    public void trim() {
-        children.clear();
 
-    }
+    public ParseNode(String word, String partOfSpeech, int sentencePos) {
+        this.word.set(word, partOfSpeech, sentencePos);
 
-    private enum Nouns {NN, NNS, NNP, NNPS}
-
-    public ParseNode(String word, String tag, int sentencePos) {
-        this.word = word;
-        this.tag = tag;
-        this.sentencePos = sentencePos;
     }
 
     public  List<ParseNode> getChildren() {
@@ -33,14 +22,13 @@ public class ParseNode {
     }
 
     public String getPath() {
-        return word + "/" + tag;
+        return word.toString();
     }
-
 
 
     public void addChildren(Hashtable<Integer, LinkedList<ParseNode>> nodes) {
 
-        LinkedList<ParseNode> children = nodes.get(this.sentencePos);
+        LinkedList<ParseNode> children = nodes.get(this.word.getSentencePos());
         if(children != null && !children.isEmpty()) {
             this.addChildren(children);
             for (ParseNode child : children)
@@ -55,9 +43,6 @@ public class ParseNode {
 
 
     public boolean isNoun() {
-        return tag.equals(Nouns.NN.toString()) ||
-                tag.equals(Nouns.NNS.toString()) ||
-                tag.equals(Nouns.NNP.toString())||
-                tag.equals(Nouns.NNPS.toString());
+        return this.word.isNoun();
     }
 }

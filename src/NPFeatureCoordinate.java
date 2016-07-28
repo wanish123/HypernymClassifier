@@ -32,6 +32,11 @@ public class NPFeatureCoordinate implements Writable, WritableComparable<NPFeatu
     }
 
     @Override
+    public int hashCode() {
+        return this.pair.hashCode();
+    }
+
+    @Override
     public void write(DataOutput dataOutput) throws IOException {
         pair.write(dataOutput);
         coordinate.write(dataOutput);

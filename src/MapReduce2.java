@@ -80,8 +80,19 @@ public class MapReduce2 {
 
 
         private DependencyPath parseDependencyPath(String line) {
+
             String[] parts = line.split("\t");
-            return new DependencyPath(parts[0]);
+
+            if(parts.length == 0)
+                return new DependencyPath("");
+
+            String path = "";
+            try{
+                path = parts[0];
+            }catch (ArrayIndexOutOfBoundsException e){
+                e.printStackTrace();
+            }
+            return new DependencyPath(path);
         }
 
 
@@ -119,6 +130,24 @@ public class MapReduce2 {
                     ex.printStackTrace();
                 }
             }
+//
+//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
+//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
+//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
+//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
+//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
+//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
+//
+//            hypernymNounPairs.add(np1);
+//            hypernymNounPairs.add(np2);
+//            hypernymNounPairs.add(np3);
+//            hypernymNounPairs.add(np4);
+//            hypernymNounPairs.add(np5);
+//            hypernymNounPairs.add(np6);
+//            hypernymNounPairs.add(np7);
+//            hypernymNounPairs.add(np8);
 
         }
 

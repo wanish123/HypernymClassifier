@@ -45,7 +45,7 @@ public class MapReduce1 {
                     if(parts[2].equals("True")) {
                         String first = stemIt(parts[0]);
                         String second = stemIt(parts[1]);
-                        NounPair nounPair = new NounPair(first,second);
+                        NounPair nounPair = new NounPair(first, second, MapReduce2.Type.True);
                         hypernymNounPairs.add(nounPair);
                     }
                 }
@@ -60,6 +60,26 @@ public class MapReduce1 {
                 }
             }
 
+//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
+//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
+//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
+//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
+//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
+//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
+//
+//            hypernymNounPairs.add(np1);
+//            hypernymNounPairs.add(np2);
+//            hypernymNounPairs.add(np3);
+//            hypernymNounPairs.add(np4);
+//            hypernymNounPairs.add(np5);
+//            hypernymNounPairs.add(np6);
+//            hypernymNounPairs.add(np7);
+//            hypernymNounPairs.add(np8);
+
+
+
         }
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -68,6 +88,7 @@ public class MapReduce1 {
 
             if(!isLegal(sentence))
                 return;
+
             sentence = stem(sentence);
             List<Subsentence> subsentences = extractSubsentences(sentence);
             NounPair pair;
@@ -77,21 +98,48 @@ public class MapReduce1 {
                 pair = subsentence.getNounPair();
                 if (hypernymNounPairs.contains(pair)) {
                     dp = subsentence.getDependencyPath();
-                    if(!dp.isEmpty())
+                    //if(!dp.isEmpty())
                         context.write(dp, pair);
                 }
             }
-
         }
 
         private boolean isLegal(String sentence) {
+            if(sentence.equals("#/#/0 //dep fig/NNP/1 "))
+                System.out.println("FHJDJDJ");
+
+            if(sentence.equals("#/#/0 //dep fig/NNP/1"))
+                System.out.println("FHJDJDJ");
+
             String[] parts = sentence.split(" ");
             for(String part: parts){
                 String[] wordInfo = part.split("/");
-                if(wordInfo.length < 4)
+                if(wordInfo.length < 4) {
                     return false;
+                }
+                //TODO check that all parts are correct
+                String word = parts[0];
+                String partOfSpeech = parts[1];
+                String partOfSpeechStan = parts[2];
+                String headIndex = parts[3];
+                if(!(isWord(word) && isPartOfSpeech(partOfSpeech) && isIndex(headIndex)))
+                    return false;
+
+
             }
             return true;
+        }
+
+        private boolean isIndex(String headIndex) {
+            return false;
+        }
+
+        private boolean isPartOfSpeech(String partOfSpeech) {
+            return false;
+        }
+
+        private boolean isWord(String word) {
+            return false;
         }
 
 

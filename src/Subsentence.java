@@ -9,7 +9,13 @@ public class Subsentence {
     public Subsentence(String path) {
         String[] parts = path.split(" ");
         StringBuilder sb = new StringBuilder();
-        this.nounPair = new NounPair(parts[0], parts[parts.length-1]);
+        String[] wordInfo = parts[0].split("/");
+        String first = wordInfo[0];
+        String POS1 = wordInfo[1];
+        wordInfo = parts[parts.length-1].split("/");
+        String second = wordInfo[0];
+        String POS2 = wordInfo[1];
+        this.nounPair = new NounPair(first, POS1, second, POS2);
         int i;
         for(i = 1; i < parts.length - 2; i++)
             sb.append(parts[i] + " ");

@@ -1,4 +1,3 @@
-import org.apache.commons.math3.exception.NotANumberException;
 
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -42,6 +41,16 @@ public class ParseTree {
             nodes.get(index).add(node);
 
         }
+    }
+
+    private boolean isLegal(String sentence) {
+        String[] parts = sentence.split(" ");
+        for(String part: parts){
+            String[] wordInfo = part.split("/");
+            if(wordInfo.length < 4)
+                return false;
+        }
+        return true;
     }
 
     public ParseNode getRoot() {
