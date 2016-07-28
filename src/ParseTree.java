@@ -1,3 +1,5 @@
+import org.apache.commons.math3.exception.NotANumberException;
+
 import java.util.Hashtable;
 import java.util.LinkedList;
 
@@ -27,7 +29,13 @@ public class ParseTree {
         for(int i = 0; i < parts.length; i++){
             String wordInfo = parts[i];
             String[] wordInfoParts = wordInfo.split("/");
-            int index = Integer.parseInt(wordInfoParts[2]);
+            int index;
+            try {
+                index = Integer.parseInt(wordInfoParts[2]);
+            }catch (NumberFormatException e){
+                System.out.println(e.getMessage());
+                continue;
+            }
             ParseNode node = new ParseNode(wordInfoParts[0], wordInfoParts[1],i + 1);
             if(!nodes.containsKey(index))
                 nodes.put(index, new LinkedList<ParseNode>());

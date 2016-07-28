@@ -9,7 +9,6 @@ public class ParseNode {
     private String word;
     private String tag;
     private int sentencePos;
-
     private List<ParseNode> children = new LinkedList<ParseNode>();
 
     public boolean isLeaf() {

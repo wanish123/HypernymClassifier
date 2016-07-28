@@ -120,27 +120,6 @@ public class MapReduce2 {
                 }
             }
 
-            //DEBUG
-            NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
-            customPair1.setType(MapReduce2.Type.True);
-            NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
-            customPair2.setType(MapReduce2.Type.True);
-
-            NounPair customPair3 = new NounPair("custodi/NN", "authors/NN");
-            customPair3.setType(MapReduce2.Type.True);
-
-            NounPair customPair4 = new NounPair("custodi/NN", "wanish/NN");
-            customPair3.setType(MapReduce2.Type.True);
-
-            NounPair customPair5 = new NounPair("authors/NN", "wanish/NN");
-            customPair5.setType(MapReduce2.Type.True);
-
-            hypernymNounPairs.add(customPair1);
-            hypernymNounPairs.add(customPair2);
-            hypernymNounPairs.add(customPair3);
-            hypernymNounPairs.add(customPair4);
-            hypernymNounPairs.add(customPair5);
-
         }
 
         private String stemIt(String word) {
@@ -160,6 +139,10 @@ public class MapReduce2 {
 
             int occurrences = getOccurrences(value);
             String sentence = value.toString().split("\\t")[1];
+
+            if(!isLegal(sentence))
+                return;
+
             sentence = stem(sentence);
             List<Subsentence> subsentences = extractSubsentences(sentence);
 
@@ -190,13 +173,21 @@ public class MapReduce2 {
             int res = 0;
             try{
                 res = Integer.parseInt(parts[2]);
-            }catch (NotANumberException e){
+            }catch (NumberFormatException e){
                 e.printStackTrace();
             }
             return res;
         }
 
-
+        private boolean isLegal(String sentence) {
+            String[] parts = sentence.split(" ");
+            for(String part: parts){
+                String[] wordInfo = part.split("/");
+                if(wordInfo.length < 4)
+                    return false;
+            }
+            return true;
+        }
 
         private String stem(String sentence) {
             StringBuilder sb = new StringBuilder();
@@ -228,7 +219,10 @@ public class MapReduce2 {
             List<Subsentence> childResult;
             List<Subsentence> self;
 
-            path = (path + " " + node.getPath());
+            if(path.isEmpty())
+                path = node.getPath();
+            else
+                path = (path + " " + node.getPath());
 
             if(node.isNoun() && isSubsentence(path)){
                 Subsentence sentence = new Subsentence(path);

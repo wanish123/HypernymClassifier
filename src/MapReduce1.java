@@ -60,33 +60,14 @@ public class MapReduce1 {
                 }
             }
 
-            //DEBUG
-            NounPair customPair1 = new NounPair("custodi/NN", "control/NN");
-            customPair1.setType(MapReduce2.Type.True);
-
-            NounPair customPair2 = new NounPair("custodi/NN", "ag/NN");
-            customPair2.setType(MapReduce2.Type.True);
-
-            NounPair customPair3 = new NounPair("custodi/NN", "author/NN");
-            customPair3.setType(MapReduce2.Type.True);
-
-            NounPair customPair4 = new NounPair("custodi/NN", "wanish/NN");
-            customPair3.setType(MapReduce2.Type.True);
-
-            NounPair customPair5 = new NounPair("author/NN", "wanish/NN");
-            customPair5.setType(MapReduce2.Type.True);
-
-            hypernymNounPairs.add(customPair1);
-            hypernymNounPairs.add(customPair2);
-            hypernymNounPairs.add(customPair3);
-            hypernymNounPairs.add(customPair4);
-            hypernymNounPairs.add(customPair5);
-
         }
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
             String sentence = value.toString().split("\\t")[1];
+
+            if(!isLegal(sentence))
+                return;
             sentence = stem(sentence);
             List<Subsentence> subsentences = extractSubsentences(sentence);
             NounPair pair;
@@ -96,10 +77,21 @@ public class MapReduce1 {
                 pair = subsentence.getNounPair();
                 if (hypernymNounPairs.contains(pair)) {
                     dp = subsentence.getDependencyPath();
-                    context.write(dp, pair);
+                    if(!dp.isEmpty())
+                        context.write(dp, pair);
                 }
             }
 
+        }
+
+        private boolean isLegal(String sentence) {
+            String[] parts = sentence.split(" ");
+            for(String part: parts){
+                String[] wordInfo = part.split("/");
+                if(wordInfo.length < 4)
+                    return false;
+            }
+            return true;
         }
 
 

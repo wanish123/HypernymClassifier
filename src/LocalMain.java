@@ -22,7 +22,9 @@ public class LocalMain {
     final static String outputFileNameStep2 = "OutputStep2/";
     final static    int DPMIN = 1;
 
-    final static Path CORPUS = new Path("input/corpus_debug.txt");
+    final static Path CORPUS_DEBUG = new Path("input/corpus_debug.txt");
+    final static Path CORPUS = new Path("input/biarc.small.txt");
+
     final static Path OUTPUT_FEATURES = new Path(outputFileNameStep1);
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {

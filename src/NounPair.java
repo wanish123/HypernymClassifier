@@ -14,6 +14,7 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
     private Text type = new Text();
 
 
+
     public NounPair(){}
 
 
