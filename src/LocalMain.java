@@ -14,20 +14,24 @@ import java.io.IOException;
  * Created by talwanich on 25/07/2016.
  */
 public class LocalMain {
-    //AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 
-    //final String ass3PathName = "s3://gw-storage-30293052/HypernymClassifier";
-    // final String corpusFileName = "corpus_debug.txt";
-    final static  String outputFileNameStep1 = "OutputStep1/";
-    final static String outputFileNameStep2 = "OutputStep2/";
+    private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
+    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_SMALL = "input/biarcs.small.txt";
+    private static final String CORPUS = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
+    private static final String S3_HYPERNYM_OUTPUT1 = "Output1/";
+    private static final String S3_HYPERNYM_OUTPUT2 = "Output2/";
     final static    int DPMIN = 1;
+    static final int NUM_OF_REDUCERS = 3;
 
-    final static Path CORPUS_DEBUG = new Path("input/corpus_debug.txt");
-    final static Path CORPUS_BIG = new Path("input/biarcs.big.txt");
-    final static Path CORPUS_SMALL = new Path("input/biarcs.small.txt");
-    final static Path CORPUS = CORPUS_SMALL;
 
-    final static Path OUTPUT_FEATURES = new Path(outputFileNameStep1);
+    final static Path CORPUS_BIG_PATH = new Path(S3_HYPERNYM_PREFIX + CORPUS_BIG);
+    final static Path CORPUS_SMALL_PATH = new Path(CORPUS_SMALL);
+    final static Path CORPUS_PATH = CORPUS_SMALL_PATH;
+
+    final static Path S3_HYPERNYM_OUTPUT1_PATH = new Path(S3_HYPERNYM_OUTPUT1);
+    final static Path S3_HYPERNYM_OUTPUT2_PATH = new Path(S3_HYPERNYM_OUTPUT2);
+
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
@@ -44,8 +48,8 @@ public class LocalMain {
         job1.setOutputValueClass(DependencyPath.class);
         job1.setInputFormatClass(TextInputFormat.class);
         job1.setOutputFormatClass(TextOutputFormat.class);
-        FileInputFormat.addInputPath(job1, CORPUS);
-        FileOutputFormat.setOutputPath(job1, OUTPUT_FEATURES);
+        FileInputFormat.addInputPath(job1, CORPUS_PATH);
+        FileOutputFormat.setOutputPath(job1, S3_HYPERNYM_OUTPUT1_PATH);
 
         Configuration conf = job1.getConfiguration();
         conf.setLong("DPMIN", DPMIN);
@@ -54,8 +58,6 @@ public class LocalMain {
         job1.waitForCompletion(true);
         /* END - STEP 1*/
 
-        final int NUM_OF_REDUCERS = 3;
-        final Path FeaturesVector_Output = new Path(outputFileNameStep2);
 
 
         /* STEP 2 */
@@ -73,8 +75,8 @@ public class LocalMain {
         job2.setNumReduceTasks(NUM_OF_REDUCERS);
         job2.setPartitionerClass(NounPairPartitioner.class);
 
-        FileInputFormat.addInputPath(job2, CORPUS);
-        FileOutputFormat.setOutputPath(job2, FeaturesVector_Output);
+        FileInputFormat.addInputPath(job2, CORPUS_PATH);
+        FileOutputFormat.setOutputPath(job2, S3_HYPERNYM_OUTPUT2_PATH);
         job2.waitForCompletion(true);
         /* END - STEP 2*/
         System.exit(0);

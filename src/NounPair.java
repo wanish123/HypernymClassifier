@@ -9,6 +9,7 @@ import java.io.IOException;
 
 public class NounPair implements Writable, WritableComparable<NounPair> {
 
+
     private Word first = new Word();
     private Word second = new Word();
     private Text type = new Text(MapReduce2.Type.Unknown.toString());

@@ -18,17 +18,20 @@ import com.amazonaws.services.elasticmapreduce.model.StepConfig;
 public class RunEmrJob {
 
     private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
-    private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + "input/";
+    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_SMALL = "input/biarcs.small.txt";
+    private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
     private static final String PROJECT_JAR_PATH = S3_HYPERNYM_PREFIX + "HypernymClassifier.jar";
     private static final String S3_HYPERNYM_OUTPUT1_PATH = S3_HYPERNYM_PREFIX + "Output1/";
     private static final String S3_HYPERNYM_OUTPUT2_PATH = S3_HYPERNYM_PREFIX + "Output2/";
     private static final String ACTION_ON_FAIL = "TERMINATE_JOB_FLOW";
-    private static final String NUM_Of_REDUCERS = "10";
+    private static final String NUM_Of_REDUCERS = "3";
     private static final String HADOOP_VERSION = "2.7.2";
     private static final String PLACEMENT_TYPE = "us-east-1b";
-    private static final String S3_LOG_LOCATION = "s3://gw-storage-30293052/HypernymClassifier/Log/";
+    private static final String S3_LOG_LOCATION = S3_HYPERNYM_PREFIX + "Log/";
     private static final int    NUMBER_OF_INSTANCES = 10;
     private static final String ENDPOINT = "elasticmapreduce.us-east-1.amazonaws.com";
+    private static final String DPMIN = "1";
 
     private static void runEmrJob(){
 
@@ -42,7 +45,7 @@ public class RunEmrJob {
                 JarStep1 = new HadoopJarStepConfig()
                 .withJar(PROJECT_JAR_PATH) // This should be a full map reduce application.
                 .withMainClass("MapReduce1")
-                .withArgs(CORPUS_PATH, S3_HYPERNYM_OUTPUT1_PATH);
+                .withArgs(CORPUS_PATH, S3_HYPERNYM_OUTPUT1_PATH, DPMIN);
 
 
         StepConfig stepConfig1 = new StepConfig()

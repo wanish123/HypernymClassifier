@@ -19,6 +19,13 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class MapReduce1 {
 
+    private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
+    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_SMALL = "input/biarcs.small.txt";
+    private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
+    private static final String PROJECT_JAR_PATH = S3_HYPERNYM_PREFIX + "HypernymClassifier.jar";
+    private static final String S3_HYPERNYM_OUTPUT1_PATH = S3_HYPERNYM_PREFIX + "Output1/";
+    private static final String S3_HYPERNYM_OUTPUT2_PATH = S3_HYPERNYM_PREFIX + "Output2/";
 
     public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair>{
 
@@ -256,12 +263,15 @@ public class MapReduce1 {
      */
     public static void main(String[] args) throws Exception{
 
-//        if(args.length != 2)
-//            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , pmiCounters>");
+        if(args.length != 3)
+            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPathStep1 , DPMIN>");
 
         //Should be in S3
         final Path CORPUS = new Path(args[0]);
         final Path OUTPUT_FEATURES = new Path(args[1]);
+        final long DPMIN = Long.parseLong(args[2]);
+
+
 
         /* STEP 1 */
         Configuration conf1 = new Configuration();
@@ -275,6 +285,10 @@ public class MapReduce1 {
         job1.setOutputFormatClass(TextOutputFormat.class);
         FileInputFormat.addInputPath(job1, CORPUS);
         FileOutputFormat.setOutputPath(job1, OUTPUT_FEATURES);
+
+        Configuration conf = job1.getConfiguration();
+        conf.setLong("DPMIN", DPMIN);
+
         job1.waitForCompletion(true);
 
         /* END - STEP 1*/

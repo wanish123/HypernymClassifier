@@ -2,8 +2,10 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.iterable.S3Objects;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.apache.commons.math3.exception.NotANumberException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -26,6 +28,13 @@ public class MapReduce2 {
 
     public enum Type{True, False, Unknown}
     private static List<DependencyPath> features = new LinkedList<DependencyPath>();
+    private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
+    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_SMALL = "input/biarcs.small.txt";
+    private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
+    private static final String PROJECT_JAR_PATH = S3_HYPERNYM_PREFIX + "HypernymClassifier.jar";
+    private static final String S3_HYPERNYM_OUTPUT1_PATH =  "HypernymClassifier/Output1/";
+    private static final String S3_HYPERNYM_OUTPUT2_PATH = S3_HYPERNYM_PREFIX + "Output2/";
 
 
     public static class FeatureBuilderMapper extends Mapper<Object, Text, NPFeatureCoordinate, LongWritable> {
@@ -36,7 +45,8 @@ public class MapReduce2 {
 
         private static final String s3BucketName = "gw-storage-30293052";
         private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
-        private static String outputFileNameStep1 = "OutputStep1/part-r-00000";
+        private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
+        private static final String S3_HYPERNYM_OUTPUT1_PATH =  "HypernymClassifier/Output1/";
         private AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
         private AmazonS3 s3;
         @Override
@@ -49,33 +59,36 @@ public class MapReduce2 {
         }
 
         private void initializeFeaturesList() {
-
-            BufferedReader br = null;
+            S3Object object;
+            BufferedReader br;
             String line;
             DependencyPath feature;
 
-            try {
-                br = new BufferedReader(new FileReader(outputFileNameStep1));
-                while ((line = br.readLine()) != null) {
-                    feature = parseDependencyPath(line);
-                    features.add(feature);
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-             catch (IOException e) {
-                e.printStackTrace();
-            }
+            for(S3ObjectSummary summary : S3Objects.withPrefix(s3, s3BucketName, S3_HYPERNYM_OUTPUT1_PATH)) {
 
-            finally {
-                if(br != null) {
-                    try {
-                        br.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                object = s3.getObject(new GetObjectRequest(s3BucketName, summary.getKey()));
+                br = null;
+
+                try {
+                    br = new BufferedReader(new InputStreamReader(object.getObjectContent()));
+                    while ((line = br.readLine()) != null) {
+                        feature = parseDependencyPath(line);
+                        features.add(feature);
                     }
-                }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (br != null) {
+                        try {
+                            br.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
+                }
             }
         }
 
@@ -313,7 +326,7 @@ public class MapReduce2 {
 
     public static void main(String[] args) throws Exception {
 
-        if(args.length != 2)
+        if(args.length != 3)
             throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , numOfReducers>");
 
         final Path CORPUS = new Path(args[0]);
