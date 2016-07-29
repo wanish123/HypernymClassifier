@@ -47,11 +47,14 @@ public class MapReduce2 {
         private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
         private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
         private static final String S3_HYPERNYM_OUTPUT1_PATH =  "HypernymClassifier/Output1/";
-        private AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
         private AmazonS3 s3;
         @Override
         public void setup(Context context){
-            s3 = new AmazonS3Client(credentials);
+//            //LOCAL
+//            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+//            s3 = new AmazonS3Client(credentials);
+
+            s3 = new AmazonS3Client();
 
             initializeHyperSets();
             initializeFeaturesList();
@@ -144,24 +147,24 @@ public class MapReduce2 {
                     ex.printStackTrace();
                 }
             }
-
-            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
-            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
-            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
-            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
-            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
-            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
-            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
-            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
-
-            hypernymNounPairs.add(np1);
-            hypernymNounPairs.add(np2);
-            hypernymNounPairs.add(np3);
-            hypernymNounPairs.add(np4);
-            hypernymNounPairs.add(np5);
-            hypernymNounPairs.add(np6);
-            hypernymNounPairs.add(np7);
-            hypernymNounPairs.add(np8);
+            //DEBUG
+//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
+//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
+//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
+//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
+//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
+//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
+//
+//            hypernymNounPairs.add(np1);
+//            hypernymNounPairs.add(np2);
+//            hypernymNounPairs.add(np3);
+//            hypernymNounPairs.add(np4);
+//            hypernymNounPairs.add(np5);
+//            hypernymNounPairs.add(np6);
+//            hypernymNounPairs.add(np7);
+//            hypernymNounPairs.add(np8);
 
         }
 
@@ -221,15 +224,47 @@ public class MapReduce2 {
             }
             return res;
         }
-
         private boolean isLegal(String sentence) {
+
             String[] parts = sentence.split(" ");
             for(String part: parts){
                 String[] wordInfo = part.split("/");
-                if(wordInfo.length < 4)
+                if(wordInfo.length < 4) {
                     return false;
+                }
+                //TODO check that all parts are correct
+                String word = wordInfo[0];
+                String partOfSpeech = wordInfo[1];
+                String headIndex = wordInfo[3];
+                if(!(isWord(word) && isPartOfSpeech(partOfSpeech) && isIndex(headIndex)))
+                    return false;
+
+
             }
             return true;
+        }
+
+        private boolean isIndex(String headIndex) {
+            String REGEX = "^[0-9]+$";
+            if(headIndex.matches(REGEX))
+                return true;
+
+            return false;        }
+
+        private boolean isPartOfSpeech(String partOfSpeech) {
+            String REGEX = "^[A-Z]+$";
+            if(partOfSpeech.matches(REGEX))
+                return true;
+
+            return false;
+        }
+
+        private boolean isWord(String word) {
+            String REGEX = "^[a-zA-Z]+$";
+            if(word.matches(REGEX))
+                return true;
+
+            return false;
         }
 
         private String stem(String sentence) {
@@ -250,8 +285,20 @@ public class MapReduce2 {
         }
 
         private List<Subsentence> extractSubsentences(String sentence) {
-            ParseTree parseTree = new ParseTree(sentence);
-            List<Subsentence> subsentences = extractSubsentences(parseTree.getRoot(),"");
+            List<Subsentence> subsentences = null;
+            try {
+                ParseTree parseTree = new ParseTree(sentence);
+                subsentences = extractSubsentences(parseTree.getRoot(), "");
+            }
+            catch (NullPointerException e){
+                System.out.println("NullPointerException: " + sentence);
+
+            }
+
+            catch (ArrayIndexOutOfBoundsException e){
+                System.out.println("ArrayIndexOutOfBoundsException: " + sentence);
+            }
+
             return subsentences;
         }
 
@@ -344,6 +391,7 @@ public class MapReduce2 {
         job2.setCombinerClass(FeaturesVectorBuilderReducer.class);
         job2.setOutputKeyClass(NPFeatureCoordinate.class);
         job2.setOutputValueClass(LongWritable.class);
+
         job2.setInputFormatClass(TextInputFormat.class);
         job2.setNumReduceTasks(NUM_OF_REDUCERS);
         job2.setPartitionerClass(NounPairPartitioner.class);
@@ -352,6 +400,8 @@ public class MapReduce2 {
         FileOutputFormat.setOutputPath(job2, FeaturesVector_Output);
         job2.waitForCompletion(true);
         /* END - STEP 2*/
+
+
     }
 }
 

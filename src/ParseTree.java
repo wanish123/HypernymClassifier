@@ -17,13 +17,14 @@ public class ParseTree {
 
     }
 
-    private void buildTree(Hashtable<Integer, LinkedList<ParseNode>> nodes) {
+    private void buildTree(Hashtable<Integer, LinkedList<ParseNode>> nodes) throws NullPointerException, ArrayIndexOutOfBoundsException {
+
         root = nodes.get(0).get(0);
         root.addChildren(nodes);
 
     }
 
-    private void parseNodes(String sentence, Hashtable<Integer, LinkedList<ParseNode>> nodes) {
+    private void parseNodes(String sentence, Hashtable<Integer, LinkedList<ParseNode>> nodes) throws NullPointerException, ArrayIndexOutOfBoundsException{
         String[] parts = sentence.split(" ");
         for(int i = 0; i < parts.length; i++){
             String wordInfo = parts[i];

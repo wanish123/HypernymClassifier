@@ -14,6 +14,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
@@ -36,8 +37,10 @@ public class MapReduce1 {
 
         @Override
         public void setup(Context context){
-            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-            AmazonS3 s3 = new AmazonS3Client(credentials);
+//            //LOCAL
+//            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+//            AmazonS3 s3 = new AmazonS3Client(credentials);
+            AmazonS3 s3 = new AmazonS3Client();
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 
@@ -67,23 +70,24 @@ public class MapReduce1 {
                 }
             }
 
-            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
-            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
-            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
-            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
-            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
-            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
-            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
-            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
-
-            hypernymNounPairs.add(np1);
-            hypernymNounPairs.add(np2);
-            hypernymNounPairs.add(np3);
-            hypernymNounPairs.add(np4);
-            hypernymNounPairs.add(np5);
-            hypernymNounPairs.add(np6);
-            hypernymNounPairs.add(np7);
-            hypernymNounPairs.add(np8);
+            //DEBUG
+//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
+//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
+//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
+//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
+//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
+//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
+//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
+//
+//            hypernymNounPairs.add(np1);
+//            hypernymNounPairs.add(np2);
+//            hypernymNounPairs.add(np3);
+//            hypernymNounPairs.add(np4);
+//            hypernymNounPairs.add(np5);
+//            hypernymNounPairs.add(np6);
+//            hypernymNounPairs.add(np7);
+//            hypernymNounPairs.add(np8);
 
 
 
@@ -186,7 +190,6 @@ public class MapReduce1 {
             return subsentences;
         }
 
-
         private List<Subsentence> extractSubsentences(ParseNode node, String path) {
 
             List<Subsentence> result = new LinkedList<Subsentence>();
@@ -272,18 +275,28 @@ public class MapReduce1 {
         final long DPMIN = Long.parseLong(args[2]);
 
 
-
         /* STEP 1 */
         Configuration conf1 = new Configuration();
         Job job1 = Job.getInstance(conf1, "MapReduce1");
         job1.setJarByClass(MapReduce1.class);
+
         job1.setMapperClass(DPMapper.class);
+
+        job1.setMapOutputKeyClass(DependencyPath.class);
+
+        job1.setMapOutputValueClass(NounPair.class);
+
         job1.setReducerClass(FeaturesReducer.class);
-        job1.setOutputKeyClass(LongWritable.class);
-        job1.setOutputValueClass(Text.class);
-        job1.setInputFormatClass(SequenceFileInputFormat.class);
+
+        job1.setOutputKeyClass(DependencyPath.class);
+
+        job1.setOutputValueClass(DependencyPath.class);
+
+        job1.setInputFormatClass(TextInputFormat.class);
         job1.setOutputFormatClass(TextOutputFormat.class);
+
         FileInputFormat.addInputPath(job1, CORPUS);
+
         FileOutputFormat.setOutputPath(job1, OUTPUT_FEATURES);
 
         Configuration conf = job1.getConfiguration();
@@ -292,6 +305,9 @@ public class MapReduce1 {
         job1.waitForCompletion(true);
 
         /* END - STEP 1*/
+
+
+
 
     }
 
