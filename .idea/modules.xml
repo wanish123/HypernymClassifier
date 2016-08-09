@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/ClassifierParser/ClassifierParser.iml" filepath="$PROJECT_DIR$/ClassifierParser/ClassifierParser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ClassifierRandomForest/ClassifierRandomForest.iml" filepath="$PROJECT_DIR$/ClassifierRandomForest/ClassifierRandomForest.iml" />
       <module fileurl="file://$PROJECT_DIR$/HypernymClassifier.iml" filepath="$PROJECT_DIR$/HypernymClassifier.iml" />
     </modules>
   </component>
