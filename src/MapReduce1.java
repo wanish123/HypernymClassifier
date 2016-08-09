@@ -27,77 +27,6 @@ public class MapReduce1 {
     public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair>{
 
 
-        private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
-        private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
-
-        private static final String s3BucketName = "gw-storage-30293052";
-        private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
-        private static final int MIN_PATH_LENGTH = 2;
-
-        @Override
-        public void setup(Context context){
-            //LOCAL
-//            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-//            AmazonS3 s3 = new AmazonS3Client(credentials);
-            /*
-            AmazonS3 s3 = new AmazonS3Client();
-            S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
-            BufferedReader br = null;
-
-            try {
-
-                br = new BufferedReader(new InputStreamReader(object.getObjectContent()));
-
-                String sCurrentLine;
-
-                while ((sCurrentLine = br.readLine()) != null) {
-                    String[] parts = sCurrentLine.split("\\t");
-                    String first = stemIt(parts[0]);
-                    String second = stemIt(parts[1]);
-                    if(parts[2].equals("True")) {
-                        NounPair nounPair = new NounPair(first, second, MapReduce2.Type.True);
-                        hypernymNounPairs.add(nounPair);
-                    }
-
-                    if(parts[2].equals("False")) {
-                        NounPair nounPair = new NounPair(first, second, MapReduce2.Type.False);
-                        nonHypernymNounPairs.add(nounPair);
-                    }
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (br != null)br.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-            //DEBUG
-//            NounPair np1 = new NounPair(stemIt("custody"), stemIt("control"));
-//            NounPair np2 = new NounPair(stemIt("custody"), stemIt("board"));
-//            NounPair np3 = new NounPair(stemIt("custody"), stemIt("child"));
-//            NounPair np4 = new NounPair(stemIt("custody"), stemIt("wanish"));
-//            NounPair np5 = new NounPair(stemIt("authors"), stemIt("wanish"));
-//            NounPair np6 = new NounPair(stemIt("custody"), stemIt("wanish"));
-//            NounPair np7 = new NounPair(stemIt("custody"), stemIt("authors"));
-//            NounPair np8 = new NounPair(stemIt("custody"), stemIt("age"));
-//
-//            hypernymNounPairs.add(np1);
-//            hypernymNounPairs.add(np2);
-//            hypernymNounPairs.add(np3);
-//            hypernymNounPairs.add(np4);
-//            hypernymNounPairs.add(np5);
-//            hypernymNounPairs.add(np6);
-//            hypernymNounPairs.add(np7);
-//            hypernymNounPairs.add(np8);
-
-            */
-
-        }
-
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 
             String sentence = value.toString().split("\\t")[1];
@@ -113,19 +42,12 @@ public class MapReduce1 {
             for(Subsentence subsentence: subsentences) {
                 pair = subsentence.getNounPair();
                     dp = subsentence.getDependencyPath();
-                    if(!dp.isEmpty()){
-                        System.out.println("map1: emits < " + dp + " , " + pair + " >");
+                    if(!dp.isEmpty())
                         context.write(dp, pair);
-                    }
+
             }
         }
 
-        private boolean isAnnotated(NounPair pair) {
-            return true;
-//            NounPair reveredPair = new NounPair(pair.getSecond(), pair.getFirst());
-//            return hypernymNounPairs.contains(pair) || hypernymNounPairs.contains(reveredPair) ||
-//                    nonHypernymNounPairs.contains(pair) || nonHypernymNounPairs.contains(reveredPair);
-        }
 
         private boolean isLegal(String sentence) {
 

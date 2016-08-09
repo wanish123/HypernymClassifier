@@ -27,7 +27,7 @@ public class LocalMain {
 
     final static Path CORPUS_BIG_PATH = new Path(CORPUS_BIG);
     final static Path CORPUS_SMALL_PATH = new Path(CORPUS_SMALL);
-    final static Path CORPUS_PATH = CORPUS_BIG_PATH;
+    final static Path CORPUS_PATH = CORPUS_SMALL_PATH;
 
     final static Path S3_HYPERNYM_OUTPUT1_PATH = new Path(S3_HYPERNYM_OUTPUT1);
     final static Path S3_HYPERNYM_OUTPUT2_PATH = new Path(S3_HYPERNYM_OUTPUT2);

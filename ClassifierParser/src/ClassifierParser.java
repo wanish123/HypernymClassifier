@@ -19,7 +19,8 @@ public class ClassifierParser {
     private static  String INPUT_DIR_NAME = "Input";
     private static final String UNKNOWN_TYPE = "Unknown";
     private static final String TRUE_TYPE = "True";
-    private static final String OUTPUT_FILE_NAME = "Output";
+    private static final String FALSE_TYPE = "False";
+    private static final String OUTPUT_FILE_NAME = "ClassifierRandomForest/src/Output";
     private static final String TXT = ".txt";
     private static boolean firstLine = true;
 
@@ -28,7 +29,8 @@ public class ClassifierParser {
     private static int numberOfFeatures;
     private static List<Integer[]> vectors = new ArrayList();
     private static List<Integer> annotation = new ArrayList();
-    private static List<String> nounPairs = new ArrayList();
+    //private static List<String> nounPairs = new ArrayList();
+    private static List<NounPair> nounPairs = new ArrayList();
 
     private static final String s3BucketName = "gw-storage-30293052";
     private static AmazonS3 s3;
@@ -164,7 +166,7 @@ public class ClassifierParser {
 
         try {
             bw = new BufferedWriter(new FileWriter(OUTPUT_FILE_NAME + "_" + dp + TXT));
-            npw = new BufferedWriter(new FileWriter(OUTPUT_FILE_NAME + "_noun_pairs1_" + dp + TXT));
+            npw = new BufferedWriter(new FileWriter(OUTPUT_FILE_NAME + "_noun_pairs_" + dp + TXT));
             writeData(bw, npw);
             writeAnnotations(bw);
 
@@ -206,7 +208,7 @@ public class ClassifierParser {
 
                 bw.write(i + ", ");
                 cnpw += i + " ";
-                npw.write(feature + " = " +i.toString() + ", ");
+                npw.write(/*feature + " = " +*/i.toString()/* + ", "*/);
                 feature++;
             }
 
@@ -229,49 +231,46 @@ public class ClassifierParser {
             br = new BufferedReader(new InputStreamReader(inputFile.getObjectContent()));
 
             String[] parts, wordInfoParts;
-            String currentNounPair = "", currentType = TRUE_TYPE;
-            int    currentValue, currentCoordinate, iteration = 1;
+            //String currentNounPair = "", currentType = TRUE_TYPE;
+            NounPair currentNounPair = new NounPair();
+            String currentType = TRUE_TYPE;
+            int    currentValue, currentCoordinate;
 
             while ((sCurrentLine = br.readLine()) != null) {
-                if(iteration < 3){
-                    iteration++;
-                    continue;
-                }
 
-                else {
+                parts = sCurrentLine.split("\t"); // key, value
+                assert (parts.length == 2);
 
-                    parts = sCurrentLine.split("\t"); // key, value
-                    assert (parts.length == 2);
+                wordInfoParts = parts[0].split(" ");
+                assert (wordInfoParts.length == 4); // word, word, type, coordinate
 
-                    wordInfoParts = parts[0].split(" ");
-                    assert (wordInfoParts.length == 4); // word, word, type, coordinate
+                currentValue = Integer.parseInt(parts[1]);
+                currentCoordinate = Integer.parseInt(wordInfoParts[3]);
+                String _currentType = wordInfoParts[2];
+                NounPair _currentNounPair = new NounPair(wordInfoParts[0].split("/")[0], wordInfoParts[1].split("/")[0], getType(_currentType));
+//                String _currentNounPair = wordInfoParts[0] + " " + wordInfoParts[1];
+                assert(currentCoordinate <= numberOfFeatures);
 
-                    currentValue = Integer.parseInt(parts[1]);
-                    currentCoordinate = Integer.parseInt(wordInfoParts[3]);
-                    String _currentType = wordInfoParts[2];
-                    String _currentNounPair = wordInfoParts[0] + " " + wordInfoParts[1];
-
-                    assert(currentCoordinate <= numberOfFeatures);
-
-                    if(!currentNounPair.equals(_currentNounPair)){ // new NounPair vector
-                        if(featureVector != null) {
-                            vectors.add(featureVector);
-                            annotation.add((currentType.equals(TRUE_TYPE) ? 1 : 0));
-                            nounPairs.add(currentNounPair + " " + currentType);
-                        }
-
-                        currentType = _currentType;
-                        currentNounPair = _currentNounPair;
-                        featureVector = new Integer[numberOfFeatures];
+                if(!currentNounPair.equals(_currentNounPair)){ // new NounPair vector
+                    if(featureVector != null) {
+                        vectors.add(featureVector);
+                        annotation.add((currentType.equals(TRUE_TYPE) ? 1 : 0));
+                        //nounPairs.add(currentNounPair + " " + currentType);
+                        nounPairs.add(currentNounPair);
                     }
 
-                    featureVector[currentCoordinate] = currentValue;
-
-                    if (currentType.equals(UNKNOWN_TYPE))
-                        break;
+                    currentType = _currentType;
+                    currentNounPair = _currentNounPair;
+                    featureVector = new Integer[numberOfFeatures];
                 }
 
+                featureVector[currentCoordinate] = currentValue;
+
+                if (currentType.equals(UNKNOWN_TYPE))
+                    break;
             }
+
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -288,6 +287,16 @@ public class ClassifierParser {
             firstLine = true;
             featureVector = null;
         }
+    }
+
+    private static MapReduce2.Type getType(String currentType) {
+        if(currentType.equals(TRUE_TYPE))
+            return MapReduce2.Type.True;
+        if(currentType.equals(FALSE_TYPE))
+            return MapReduce2.Type.False;
+        if(currentType.equals(UNKNOWN_TYPE))
+            return MapReduce2.Type.Unknown;
+        return null;
     }
 
     private static void readFile(File inputFile) {
@@ -326,7 +335,7 @@ public class ClassifierParser {
                         if(featureVector != null) {
                             vectors.add(featureVector);
                             annotation.add((currentType.equals(TRUE_TYPE) ? 1 : 0));
-                            nounPairs.add(currentNounPair + " " + currentType);
+                            //nounPairs.add(currentNounPair + " " + currentType);
                         }
 
                         currentType = _currentType;

@@ -98,11 +98,11 @@ def parse_input(filename):
 if __name__ == "__main__":
     print "Classifier RandomForest"
     test = 0.1
-    print "DPMIN = 60, test_size = " , test
+    print "DPMIN = 85, test_size = ", test
     clf = HypernymClassifier()
 
     print "Parsing input"
-    X, Y = parse_input("Output_60.txt")
+    X, Y = parse_input("Output_85.txt")
 
     X = np.array(X)
     Y = np.array(Y)
@@ -110,10 +110,10 @@ if __name__ == "__main__":
     print "Splitting to train and test"
     X_train, X_test, Y_train, Y_test = cross_validation.train_test_split(X, Y, test_size = test, random_state = 0)
 
-    print "size(X_train)", len(X_train)
-    print "size(Y_train)", len(Y_train)
-    print "size(X_test)", len(X_test)
-    print "size(Y_test)", len(Y_test)
+    # print "size(X_train)", len(X_train)
+    # print "size(Y_train)", len(Y_train)
+    # print "size(X_test)", len(X_test)
+    # print "size(Y_test)", len(Y_test)
     print "Training"
 
     clf.fit(X_train,Y_train)
@@ -127,8 +127,11 @@ if __name__ == "__main__":
     print 'Testing {0} noun pairs'.format(len(Y_test))
     print "TP = ", TP, " FP = ", FP, " TN = ", TN, " FN = ", FN
 
-    fpValue = ''.join(str(e).replace(" ", "") for e in fpValue)
-    print "FP = ", fpValue
+    # fpValue = ''.join(str(e).replace(" ", "") for e in fpValue)
+    # print "FP = ", fpValue
+
+    # tpValue = ''.join(str(e).replace(" ", "") for e in tpValue)
+    # print "TP = ", tpValue
 
     print 'Recall = ' ,recall_score(Y_test, Y_pred)
     print 'Precision = ', precision_score(Y_test, Y_pred)

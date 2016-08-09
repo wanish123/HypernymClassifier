@@ -1,3 +1,5 @@
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -48,9 +50,9 @@ public class MapReduceDPmin1 {
         @Override
         public void setup(Context context){
             //LOCAL
-//            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-//            AmazonS3 s3 = new AmazonS3Client(credentials);
-            AmazonS3 s3 = new AmazonS3Client();
+            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+            AmazonS3 s3 = new AmazonS3Client(credentials);
+          //  AmazonS3 s3 = new AmazonS3Client();
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
 

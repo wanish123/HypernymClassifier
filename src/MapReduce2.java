@@ -1,3 +1,5 @@
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.iterable.S3Objects;
@@ -52,13 +54,12 @@ public class MapReduce2 {
         @Override
         public void setup(Context context){
 //            //LOCAL
-//            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-//            s3 = new AmazonS3Client(credentials);
+            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
+            s3 = new AmazonS3Client(credentials);
 
             FEATURES_LIST_DIRECTORY = context.getConfiguration().get(FEATURES_LIST_VAR);
-            System.out.println("FEATURES_LIST_DIRECTORY: " + FEATURES_LIST_DIRECTORY);
 
-            s3 = new AmazonS3Client();
+    //        s3 = new AmazonS3Client();
 
             initializeHyperSets();
             initializeFeaturesList();
@@ -203,8 +204,6 @@ public class MapReduce2 {
 
                 if ((index = features.indexOf(dp)) != -1) {
                     pair.setType(findType(pair));
-                    System.out.println("map2: for path " +  dp + " emits < (" + pair + " , " + index + ") , " + occurrences +" >");
-
                     npAndIndex = new NPFeatureCoordinate(pair, index);
                     context.write(npAndIndex, new LongWritable(occurrences));
                 }
@@ -365,7 +364,6 @@ public class MapReduce2 {
 
             Iterator<LongWritable> iter = values.iterator();
             long sum = 0;
-            System.out.println("reducer2: key: " + key);
             while(iter.hasNext())
                 sum += iter.next().get();
 

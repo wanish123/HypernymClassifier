@@ -4,10 +4,10 @@
 public class Main {
 
     public static void main(String[] args){
-        String dp = "60";
-        ClassifierParser.parseS3(dp);
+        String dp = "85";
+        //ClassifierParser.parseS3(dp);
         //System.out.println(ClassifierParser.countFeatures(dp));
-      //  ClassifierParser.extractFeatures(dp);
+       ClassifierParser.extractFeatures(dp);
 
 
     }
