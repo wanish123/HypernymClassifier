@@ -1,35 +1,46 @@
-import java.io.*;
-import java.util.*;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class MapReduce1 {
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Created by talwanich on 01/08/2016.
+ */
+public class MapReduceDPmin1 {
+
+
 
     private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
-    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_BIG = "input/";
     private final static String CORPUS_SMALL = "input/biarcs.small.txt";
     private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
     private static final String PROJECT_JAR_PATH = S3_HYPERNYM_PREFIX + "HypernymClassifier.jar";
     private static final String S3_HYPERNYM_OUTPUT1_PATH = S3_HYPERNYM_PREFIX + "Output1/";
     private static final String S3_HYPERNYM_OUTPUT2_PATH = S3_HYPERNYM_PREFIX + "Output2/";
 
-    public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair>{
+    public static class DPMapper extends Mapper<Object, Text, DependencyPath,  NounPair> {
 
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
-        private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
-
         private static final String s3BucketName = "gw-storage-30293052";
         private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
         private static final int MIN_PATH_LENGTH = 2;
@@ -39,7 +50,6 @@ public class MapReduce1 {
             //LOCAL
 //            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 //            AmazonS3 s3 = new AmazonS3Client(credentials);
-            /*
             AmazonS3 s3 = new AmazonS3Client();
             S3Object object = s3.getObject(new GetObjectRequest(s3BucketName, annotatedSetFileName));
             BufferedReader br = null;
@@ -52,16 +62,11 @@ public class MapReduce1 {
 
                 while ((sCurrentLine = br.readLine()) != null) {
                     String[] parts = sCurrentLine.split("\\t");
-                    String first = stemIt(parts[0]);
-                    String second = stemIt(parts[1]);
                     if(parts[2].equals("True")) {
+                        String first = stemIt(parts[0]);
+                        String second = stemIt(parts[1]);
                         NounPair nounPair = new NounPair(first, second, MapReduce2.Type.True);
                         hypernymNounPairs.add(nounPair);
-                    }
-
-                    if(parts[2].equals("False")) {
-                        NounPair nounPair = new NounPair(first, second, MapReduce2.Type.False);
-                        nonHypernymNounPairs.add(nounPair);
                     }
                 }
 
@@ -94,7 +99,7 @@ public class MapReduce1 {
 //            hypernymNounPairs.add(np7);
 //            hypernymNounPairs.add(np8);
 
-            */
+
 
         }
 
@@ -117,14 +122,8 @@ public class MapReduce1 {
                         System.out.println("map1: emits < " + dp + " , " + pair + " >");
                         context.write(dp, pair);
                     }
-            }
-        }
 
-        private boolean isAnnotated(NounPair pair) {
-            return true;
-//            NounPair reveredPair = new NounPair(pair.getSecond(), pair.getFirst());
-//            return hypernymNounPairs.contains(pair) || hypernymNounPairs.contains(reveredPair) ||
-//                    nonHypernymNounPairs.contains(pair) || nonHypernymNounPairs.contains(reveredPair);
+            }
         }
 
         private boolean isLegal(String sentence) {
@@ -243,28 +242,24 @@ public class MapReduce1 {
 
     }
 
-    public static class FeaturesReducer extends Reducer<DependencyPath, NounPair,DependencyPath, DependencyPath> {
+    public static class DPReducer extends Reducer<DependencyPath, NounPair,DependencyPath, LongWritable> {
 
-        private long DPMIN;
-        private String DPMIN_VAR = "DPMIN";
         private HashSet<NounPair> uniqueNPs;
 
         @Override
         public void setup(Context context){
-            DPMIN = context.getConfiguration().getLong(DPMIN_VAR, 5);
             uniqueNPs = new HashSet<NounPair>();
-            System.out.println("DPMIN: " + DPMIN);
 
         }
         public void reduce(DependencyPath dp, Iterable<NounPair> values, Context context)
                 throws IOException, InterruptedException {
 
-                Iterator<NounPair> iter = values.iterator();
-                while(iter.hasNext() && uniqueNPs.size() < DPMIN)
-                    uniqueNPs.add(iter.next());
+            Iterator<NounPair> iter = values.iterator();
+            while(iter.hasNext())
+                uniqueNPs.add(iter.next());
 
-            if(uniqueNPs.size() == DPMIN)
-                context.write(dp, dp);
+
+            context.write(dp, new LongWritable(uniqueNPs.size()));
 
             uniqueNPs.clear();
 
@@ -279,41 +274,37 @@ public class MapReduce1 {
      */
     public static void main(String[] args) throws Exception{
 
-        if(args.length != 3)
-            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPathStep1 , DPMIN>");
+        if(args.length != 2)
+            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPathStep1>");
 
         //Should be in S3
         final Path CORPUS = new Path(args[0]);
-        final Path OUTPUT_FEATURES = new Path(args[1]);
-        final long DPMIN = Long.parseLong(args[2]);
+        final Path OUTPUT_DP = new Path(args[1]);
 
 
         /* STEP 1 */
         Configuration conf1 = new Configuration();
-        Job job1 = Job.getInstance(conf1, "MapReduce1");
+        Job job1 = Job.getInstance(conf1, "MapReduceDPMmin1");
         job1.setJarByClass(MapReduce1.class);
 
-        job1.setMapperClass(DPMapper.class);
+        job1.setMapperClass(MapReduceDPmin1.DPMapper.class);
 
         job1.setMapOutputKeyClass(DependencyPath.class);
 
         job1.setMapOutputValueClass(NounPair.class);
 
-        job1.setReducerClass(FeaturesReducer.class);
+        job1.setReducerClass(MapReduceDPmin1.DPReducer.class);
 
         job1.setOutputKeyClass(DependencyPath.class);
 
-        job1.setOutputValueClass(DependencyPath.class);
+        job1.setOutputValueClass(LongWritable.class);
 
         job1.setInputFormatClass(TextInputFormat.class);
         job1.setOutputFormatClass(TextOutputFormat.class);
 
         FileInputFormat.addInputPath(job1, CORPUS);
 
-        FileOutputFormat.setOutputPath(job1, OUTPUT_FEATURES);
-
-        Configuration conf = job1.getConfiguration();
-        conf.setLong("DPMIN", DPMIN);
+        FileOutputFormat.setOutputPath(job1, OUTPUT_DP);
 
         job1.waitForCompletion(true);
 

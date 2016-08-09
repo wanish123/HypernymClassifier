@@ -14,7 +14,7 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
     private Word second = new Word();
     private Text type = new Text(MapReduce2.Type.Unknown.toString());
 
-    public NounPair(){}
+    public NounPair(Word second, Word first){}
 
     public NounPair(String first, String POS1, String second, String POS2){
         this.first.set(first, POS1);
@@ -31,6 +31,10 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
         this.first.set(first);
         this.second.set(second);
         this.type.set(type.toString());
+
+    }
+
+    public NounPair() {
 
     }
 
@@ -85,7 +89,9 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
 
         final NounPair other = (NounPair) obj;
 
-        if(!(this.first.equals(other.first) && (this.second.equals(other.second))))
+        NounPair reveresedPair = new NounPair(this.second, this.first);
+        if(!((this.first.equals(other.first) && (this.second.equals(other.second))) ||
+                (reveresedPair.first.equals(other.first) && (reveresedPair.second.equals(other.second)))))
             return false;
 
         return true;
@@ -104,5 +110,13 @@ public class NounPair implements Writable, WritableComparable<NounPair> {
         this.first.set(pair.first.getWord(), pair.first.getPartOfSpeech());
         this.second.set(pair.second.getWord(), pair.second.getPartOfSpeech());
         this.type.set(pair.type.toString());
+    }
+
+    public Word getSecond() {
+        return second;
+    }
+
+    public Word getFirst() {
+        return first;
     }
 }

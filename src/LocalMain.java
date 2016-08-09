@@ -16,12 +16,12 @@ import java.io.IOException;
 public class LocalMain {
 
     //private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
-    private final static String CORPUS_BIG = "input/biarcs.big.txt";
+    private final static String CORPUS_BIG = "input/biarcs.02-of-99.txt";
     private final static String CORPUS_SMALL = "input/biarcs.small.txt";
     //private static final String CORPUS = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
     private static final String S3_HYPERNYM_OUTPUT1 = "Output1/";
     private static final String S3_HYPERNYM_OUTPUT2 = "Output2/";
-    final static    int DPMIN = 5;
+    final static    int DPMIN = 50;
     static final int NUM_OF_REDUCERS = 10;
 
 

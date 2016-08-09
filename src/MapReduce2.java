@@ -1,12 +1,9 @@
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.iterable.S3Objects;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import org.apache.commons.math3.exception.NotANumberException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
@@ -27,32 +24,39 @@ import java.util.List;
 public class MapReduce2 {
 
     public enum Type{True, False, Unknown}
-    private static List<DependencyPath> features = new LinkedList<DependencyPath>();
     private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
     private final static String CORPUS_BIG = "input/biarcs.big.txt";
     private final static String CORPUS_SMALL = "input/biarcs.small.txt";
     private static final String CORPUS_PATH = S3_HYPERNYM_PREFIX + CORPUS_SMALL;
     private static final String PROJECT_JAR_PATH = S3_HYPERNYM_PREFIX + "HypernymClassifier.jar";
-    private static final String S3_HYPERNYM_OUTPUT1_PATH =  "HypernymClassifier/Output1/";
+    private static String S3_HYPERNYM_OUTPUT1_PATH;
     private static final String S3_HYPERNYM_OUTPUT2_PATH = S3_HYPERNYM_PREFIX + "Output2/";
+    private static final String s3BucketName = "gw-storage-30293052";
+    private static List<DependencyPath> features = new LinkedList<DependencyPath>();
+    private static String FEATURES_LIST_VAR = "FEATURES_LIST_VAR";
+
 
 
     public static class FeatureBuilderMapper extends Mapper<Object, Text, NPFeatureCoordinate, LongWritable> {
 
         private HashSet<NounPair> hypernymNounPairs = new HashSet<NounPair>();
         private HashSet<NounPair> nonHypernymNounPairs = new HashSet<NounPair>();
+        private String FEATURES_LIST_DIRECTORY;
 
 
-        private static final String s3BucketName = "gw-storage-30293052";
+
         private static final String annotatedSetFileName = "HypernymClassifier/annotated_set.txt";
         private static final String S3_HYPERNYM_PREFIX = "s3://gw-storage-30293052/HypernymClassifier/";
-        private static final String S3_HYPERNYM_OUTPUT1_PATH =  "HypernymClassifier/Output1/";
+
         private AmazonS3 s3;
         @Override
         public void setup(Context context){
 //            //LOCAL
 //            AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 //            s3 = new AmazonS3Client(credentials);
+
+            FEATURES_LIST_DIRECTORY = context.getConfiguration().get(FEATURES_LIST_VAR);
+            System.out.println("FEATURES_LIST_DIRECTORY: " + FEATURES_LIST_DIRECTORY);
 
             s3 = new AmazonS3Client();
 
@@ -67,7 +71,7 @@ public class MapReduce2 {
             String line;
             DependencyPath feature;
 
-            for(S3ObjectSummary summary : S3Objects.withPrefix(s3, s3BucketName, S3_HYPERNYM_OUTPUT1_PATH)) {
+            for(S3ObjectSummary summary : S3Objects.withPrefix(s3, s3BucketName, FEATURES_LIST_DIRECTORY)) {
 
                 object = s3.getObject(new GetObjectRequest(s3BucketName, summary.getKey()));
                 br = null;
@@ -199,6 +203,8 @@ public class MapReduce2 {
 
                 if ((index = features.indexOf(dp)) != -1) {
                     pair.setType(findType(pair));
+                    System.out.println("map2: for path " +  dp + " emits < (" + pair + " , " + index + ") , " + occurrences +" >");
+
                     npAndIndex = new NPFeatureCoordinate(pair, index);
                     context.write(npAndIndex, new LongWritable(occurrences));
                 }
@@ -207,9 +213,10 @@ public class MapReduce2 {
         }
 
         private Type findType(NounPair pair) {
-            if(hypernymNounPairs.contains(pair))
+            NounPair reversedPair = new NounPair(pair.getSecond(), pair.getFirst());
+            if(hypernymNounPairs.contains(pair) || hypernymNounPairs.contains(reversedPair))
                 return Type.True;
-            if(nonHypernymNounPairs.contains(pair))
+            if(nonHypernymNounPairs.contains(pair) || nonHypernymNounPairs.contains(reversedPair))
                 return  Type.False;
             return Type.Unknown;
         }
@@ -348,17 +355,17 @@ public class MapReduce2 {
     public static class FeaturesVectorBuilderReducer extends Reducer<NPFeatureCoordinate,LongWritable, NPFeatureCoordinate, LongWritable> {
 
 
+
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            NounPair pair = new NounPair("Features", "Size");
-            context.write(new NPFeatureCoordinate(pair, 0), new LongWritable(features.size()));
-        }
+                    }
 
         public void reduce(NPFeatureCoordinate key, Iterable<LongWritable> values, Context context)
                 throws IOException, InterruptedException {
 
             Iterator<LongWritable> iter = values.iterator();
             long sum = 0;
+            System.out.println("reducer2: key: " + key);
             while(iter.hasNext())
                 sum += iter.next().get();
 
@@ -373,12 +380,13 @@ public class MapReduce2 {
 
     public static void main(String[] args) throws Exception {
 
-        if(args.length != 3)
-            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , numOfReducers>");
+        if(args.length != 4)
+            throw new IllegalArgumentException("Usage: " + MapReduce1.class.getSimpleName() + " < inputPath, outputPath , outputpath1, numOfReducers>");
 
         final Path CORPUS = new Path(args[0]);
         final Path FeaturesVector_Output = new Path(args[1]);
-        final int NUM_OF_REDUCERS = Integer.parseInt(args[2]);
+        final String FEATURES_LIST_DIRECTORY = args[2];
+        final int NUM_OF_REDUCERS = Integer.parseInt(args[3]);
 
         /* STEP 2 */
         Configuration conf2 = new Configuration();
@@ -398,6 +406,11 @@ public class MapReduce2 {
 
         FileInputFormat.addInputPath(job2, CORPUS);
         FileOutputFormat.setOutputPath(job2, FeaturesVector_Output);
+
+        Configuration conf = job2.getConfiguration();
+        conf.set(FEATURES_LIST_VAR, FEATURES_LIST_DIRECTORY);
+
+
         job2.waitForCompletion(true);
         /* END - STEP 2*/
 

@@ -22,7 +22,7 @@ public class DependencyPath implements Writable, WritableComparable<DependencyPa
 
     public boolean isEmpty() {
 
-        return path.toString().isEmpty();
+        return path.toString().isEmpty() || path.toString().equals(" ");
     }
 
     @Override
@@ -46,9 +46,13 @@ public class DependencyPath implements Writable, WritableComparable<DependencyPa
         return path.toString().hashCode();
     }
 
+    //Comparing path by length such that the shortest the path t
+    // he "higher" it is in terms of order
     @Override
     public int compareTo(DependencyPath o) {
-        return path.compareTo(o.path);
+        Integer thisSize = new Integer(this.path.toString().length());
+        Integer otherSize = new Integer(o.path.toString().length());
+        return otherSize.compareTo(thisSize);
     }
 
     @Override
@@ -65,5 +69,10 @@ public class DependencyPath implements Writable, WritableComparable<DependencyPa
     @Override
     public String toString() {
         return path.toString();
+    }
+
+    public int length() {
+        return this.path.toString().split(" ").length;
+
     }
 }
